@@ -17,21 +17,28 @@ export class PlayFabError extends Error {
   }
 }
 
-type Session = { ticket: string; playFabId: string };
+// ticket: Client API (login, user data). entityToken + entityId: the newer
+// Statistics / Leaderboards API, which newer titles use instead of the legacy one.
+type Session = { ticket: string; entityToken: string; entityId: string };
 let session: Promise<Session> | null = null;
 
-async function call<T>(api: string, body: object, ticket?: string): Promise<T> {
-  const res = await fetch(`https://${TITLE_ID}.playfabapi.com/Client/${api}`, {
+async function request<T>(path: string, body: object, headers: Record<string, string>) {
+  const res = await fetch(`https://${TITLE_ID}.playfabapi.com/${path}`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...(ticket ? { "X-Authorization": ticket } : {}),
-    },
+    headers: { "Content-Type": "application/json", ...headers },
     body: JSON.stringify(body),
   });
   const json = await res.json();
   if (json.code !== 200) throw new PlayFabError(json.error, json.errorMessage);
   return json.data as T;
+}
+
+function call<T>(api: string, body: object, ticket?: string): Promise<T> {
+  return request<T>(`Client/${api}`, body, ticket ? { "X-Authorization": ticket } : {});
+}
+
+function entityCall<T>(path: string, body: object, entityToken: string): Promise<T> {
+  return request<T>(path, body, { "X-EntityToken": entityToken });
 }
 
 // One anonymous account per device, so no password is needed at the venue
@@ -47,6 +54,7 @@ function deviceId() {
 type LoginResult = {
   SessionTicket: string;
   PlayFabId: string;
+  EntityToken: { EntityToken: string; Entity: { Id: string; Type: string } };
   InfoResultPayload?: {
     PlayerProfile?: { DisplayName?: string };
     UserData?: Record<string, { Value: string }>;
@@ -62,7 +70,7 @@ function randomHex(length: number) {
 // So on first visit we register a throwaway account and link this device's custom ID to it;
 // from then on LoginWithCustomID finds the existing account and never needs to create one.
 async function loginWithDevice(): Promise<LoginResult> {
-  const request = {
+  const params = {
     TitleId: TITLE_ID,
     CustomId: deviceId(),
     CreateAccount: true,
@@ -73,7 +81,7 @@ async function loginWithDevice(): Promise<LoginResult> {
     },
   };
   try {
-    return await call<LoginResult>("LoginWithCustomID", request);
+    return await call<LoginResult>("LoginWithCustomID", params);
   } catch (err) {
     if (!(err instanceof PlayFabError && err.code === "PlayerCreationDisabled")) throw err;
   }
@@ -86,14 +94,18 @@ async function loginWithDevice(): Promise<LoginResult> {
       RequireBothUsernameAndEmail: false,
     }
   );
-  await call("LinkCustomID", { CustomId: request.CustomId }, registered.SessionTicket);
-  return call<LoginResult>("LoginWithCustomID", { ...request, CreateAccount: false });
+  await call("LinkCustomID", { CustomId: params.CustomId }, registered.SessionTicket);
+  return call<LoginResult>("LoginWithCustomID", { ...params, CreateAccount: false });
 }
 
 // Logs in, claims the nickname as the PlayFab display name and returns the cloud save.
 export async function login(nickname: string): Promise<Progress | null> {
   const pending = loginWithDevice();
-  session = pending.then((r) => ({ ticket: r.SessionTicket, playFabId: r.PlayFabId }));
+  session = pending.then((r) => ({
+    ticket: r.SessionTicket,
+    entityToken: r.EntityToken.EntityToken,
+    entityId: r.EntityToken.Entity.Id,
+  }));
   session.catch(() => (session = null));
 
   const result = await pending;
@@ -111,13 +123,14 @@ export async function login(nickname: string): Promise<Progress | null> {
 
 export async function saveProgress(p: Progress) {
   if (!session) return;
-  const { ticket } = await session;
+  const { ticket, entityToken } = await session;
   await Promise.all([
     call("UpdateUserData", { Data: { [PROGRESS_KEY]: JSON.stringify(p) } }, ticket),
-    call(
-      "UpdatePlayerStatistics",
-      { Statistics: [{ StatisticName: SCORE_STAT, Value: p.score }] },
-      ticket
+    // Needs a "score" statistic and leaderboard defined under Progression in Game Manager
+    entityCall(
+      "Statistic/UpdateStatistics",
+      { Statistics: [{ Name: SCORE_STAT, Scores: [String(p.score)] }] },
+      entityToken
     ),
   ]);
 }
@@ -126,19 +139,19 @@ export type RankEntry = { position: number; name: string; score: number; me: boo
 
 export async function getLeaderboard(max = 20): Promise<RankEntry[]> {
   if (!session) return [];
-  const { ticket, playFabId } = await session;
-  const data = await call<{
-    Leaderboard: {
-      Position: number;
-      StatValue: number;
+  const { entityToken, entityId } = await session;
+  const data = await entityCall<{
+    Rankings?: {
+      Rank: number;
+      Scores: string[];
       DisplayName?: string;
-      PlayFabId: string;
+      Entity: { Id: string };
     }[];
-  }>("GetLeaderboard", { StatisticName: SCORE_STAT, StartPosition: 0, MaxResultsCount: max }, ticket);
-  return data.Leaderboard.map((e) => ({
-    position: e.Position + 1,
+  }>("Leaderboard/GetLeaderboard", { LeaderboardName: SCORE_STAT, StartingPosition: 1, PageSize: max }, entityToken);
+  return (data.Rankings ?? []).map((e) => ({
+    position: e.Rank,
     name: e.DisplayName ?? "???",
-    score: e.StatValue,
-    me: e.PlayFabId === playFabId,
+    score: Number(e.Scores[0] ?? 0),
+    me: e.Entity.Id === entityId,
   }));
 }
