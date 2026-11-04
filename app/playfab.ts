@@ -7,7 +7,8 @@ import type { Progress } from "./game-data";
 const TITLE_ID = process.env.NEXT_PUBLIC_PLAYFAB_TITLE_ID ?? "";
 const DEVICE_KEY = "arboss-playfab-id";
 const PROGRESS_KEY = "progress";
-export const SCORE_STAT = "score";
+// Name of both the statistic and the leaderboard in Game Manager (Progression / Community)
+export const SCORE_STAT = "scores";
 
 export const playfabEnabled = TITLE_ID !== "";
 
