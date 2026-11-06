@@ -234,13 +234,51 @@ export const TITLES: TitleDef[] = [
 export const STAGE_EVENT_HOUR = 14;
 export const STAGE_EVENT_MINUTE = 0;
 
-// QR payloads: "ARBOSS:BOSS:<id>", "ARBOSS:TEACHER:<id>".
-// URLs carrying ?qr=<payload> also work, so venue QR codes can open the site directly.
-export type QrAction =
+// Venue 合言葉 (written on posters around the venue). Change the words here.
+// Matching ignores hiragana/katakana, full/half width, case, spaces and punctuation.
+export const BOSS_CODEWORDS: Record<string, string> = {
+  slime: "ぷるぷる",
+  dragon: "ほのお",
+  ghost: "うらめしや",
+  robot: "ピピッ",
+};
+
+export const TEACHER_CODEWORDS: Record<string, string> = {
+  pe: "たいいく",
+  science: "じっけん",
+  math: "けいさん",
+  home: "さいほう",
+};
+
+export function normalizeCodeword(text: string) {
+  return text
+    .normalize("NFKC")
+    .toLowerCase()
+    .replace(/[ァ-ヶ]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0x60))
+    .replace(/[\s!?！？。、・.,~〜]/g, "");
+}
+
+export type CodeAction =
   | { kind: "boss"; boss: BossDef }
   | { kind: "teacher"; teacher: TeacherDef };
 
-export function parseQr(text: string): QrAction | null {
+// Accepts a venue 合言葉, or the older "ARBOSS:BOSS:<id>" / "ARBOSS:TEACHER:<id>" codes
+// (also inside a URL as ?qr=<code>), so links printed earlier keep working.
+export function parseCode(text: string): CodeAction | null {
+  const word = normalizeCodeword(text);
+  if (word) {
+    const bossId = Object.keys(BOSS_CODEWORDS).find(
+      (id) => normalizeCodeword(BOSS_CODEWORDS[id]) === word
+    );
+    const boss = BOSSES.find((b) => b.id === bossId);
+    if (boss) return { kind: "boss", boss };
+    const teacherId = Object.keys(TEACHER_CODEWORDS).find(
+      (id) => normalizeCodeword(TEACHER_CODEWORDS[id]) === word
+    );
+    const teacher = TEACHERS.find((t) => t.id === teacherId);
+    if (teacher) return { kind: "teacher", teacher };
+  }
+
   let payload = text.trim();
   try {
     const fromUrl = new URL(payload).searchParams.get("qr");

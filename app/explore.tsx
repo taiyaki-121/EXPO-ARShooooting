@@ -3,9 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import L from "leaflet";
 import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
-import Battle from "./battle";
-import { BOSSES, BossDef, Progress, Stats } from "./game-data";
-import { Drops } from "./progress";
+import { BOSSES, BossDef, Progress } from "./game-data";
 
 type LatLng = [number, number];
 
@@ -22,9 +20,10 @@ const BOSS_OFFSETS: Record<string, [number, number]> = {
   robot: [-0.0008, -0.0005],
 };
 
-function emojiIcon(emoji: string, className: string) {
+// label is our own data (boss names), never user input, so it is safe to inline as HTML
+function emojiIcon(emoji: string, className: string, label?: string) {
   return L.divIcon({
-    html: `<span>${emoji}</span>`,
+    html: `<span>${emoji}</span>${label ? `<em class="marker-label">${label}</em>` : ""}`,
     className: `emoji-marker ${className}`,
     iconSize: [40, 40],
     iconAnchor: [20, 20],
@@ -43,19 +42,15 @@ type GpsState = "loading" | "ok" | "demo";
 
 type Props = {
   progress: Progress;
-  stats: Stats;
-  onEncounter: (bossId: string) => void;
-  onWin: (boss: BossDef, drops: Drops) => void;
+  onCodeword: () => void;
   onHome: () => void;
 };
 
-export default function Explore({ progress, stats, onEncounter, onWin, onHome }: Props) {
+// View-only map: shows where the mini-bosses are. Battles start from the venue 合言葉.
+export default function Explore({ progress, onCodeword, onHome }: Props) {
   const nickname = progress.nickname;
   const [position, setPosition] = useState<LatLng>(DEMO_POSITION);
   const [gps, setGps] = useState<GpsState>("loading");
-  // Bosses defeated during this map visit; they respawn after returning home
-  const [defeated, setDefeated] = useState<string[]>([]);
-  const [selected, setSelected] = useState<Monster | null>(null);
 
   useEffect(() => {
     if (!navigator.geolocation) {
@@ -81,38 +76,8 @@ export default function Explore({ progress, stats, onEncounter, onWin, onHome }:
     [position]
   );
 
-  const remaining = monsters.filter((m) => !defeated.includes(m.id));
-
   const playerIcon = useMemo(() => emojiIcon("🧑", "player-marker"), []);
-
-  function challenge(monster: Monster) {
-    onEncounter(monster.id);
-    setSelected(monster);
-  }
-
-  function startRandomBattle() {
-    if (remaining.length === 0) return;
-    challenge(remaining[Math.floor(Math.random() * remaining.length)]);
-  }
-
-  if (selected) {
-    return (
-      <Battle
-        key={selected.id}
-        monster={selected}
-        nickname={nickname}
-        score={progress.score}
-        stats={stats}
-        onFinish={(drops) => {
-          if (drops) {
-            setDefeated((d) => [...d, selected.id]);
-            onWin(selected, drops);
-          }
-          setSelected(null);
-        }}
-      />
-    );
-  }
+  const defeatedCount = BOSSES.filter((b) => progress.defeated[b.id]).length;
 
   return (
     <div className="map-screen">
@@ -144,25 +109,29 @@ export default function Explore({ progress, stats, onEncounter, onWin, onHome }:
       <div className="map-wrap">
         <div className="map-hint">
           <span aria-hidden="true">📍</span>
-          マップのモンスターをタップして挑戦
+          合言葉を見つけて小ボスと戦おう
         </div>
         <MapContainer center={position} zoom={17} scrollWheelZoom className="map">
           <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+            url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
           />
           <Recenter position={position} />
           <Marker position={position} icon={playerIcon}>
             <Popup>{nickname}（あなた）</Popup>
           </Marker>
-          {remaining.map((m) => (
+          {monsters.map((m) => (
             <Marker
               key={m.id}
               position={m.position}
-              icon={emojiIcon(m.emoji, "monster-marker")}
-              eventHandlers={{ click: () => challenge(m) }}
+              icon={emojiIcon(m.emoji, "monster-marker", m.name)}
             >
-              <Popup>{m.name}</Popup>
+              <Popup>
+                <strong>{m.name}</strong>
+                <br />
+                {progress.defeated[m.id] ? "たおした！ " : ""}
+                このあたりの合言葉を見つけて戦おう
+              </Popup>
             </Marker>
           ))}
         </MapContainer>
@@ -179,17 +148,15 @@ export default function Explore({ progress, stats, onEncounter, onWin, onHome }:
         <div className="map-stat monster-stat">
           <span className="stat-icon monster-icon" aria-hidden="true">👾</span>
           <div>
-            <span className="stat-label">残り小ボス</span>
-            <strong>{remaining.length} <small>体</small></strong>
+            <span className="stat-label">たおした小ボス</span>
+            <strong>
+              {defeatedCount} <small>/ {BOSSES.length} 体</small>
+            </strong>
           </div>
         </div>
-        <button
-          className="btn primary"
-          onClick={startRandomBattle}
-          disabled={remaining.length === 0}
-        >
-          <span aria-hidden="true">⚔️</span>
-          ボスに挑戦
+        <button className="btn primary" onClick={onCodeword}>
+          <span aria-hidden="true">🔑</span>
+          合言葉を入力
         </button>
       </footer>
     </div>

@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react";
 import Battle from "./battle";
+import CodewordEntry from "./codeword-entry";
 import Entry from "./entry";
 import { useEventPhase } from "./event-phase";
 import Explore from "./explore";
 import { FinalBossScreen, ResultsScreen } from "./final-stage";
-import { BossDef, TITLES, parseQr } from "./game-data";
+import { BossDef, TITLES, parseCode } from "./game-data";
 import Home from "./home";
 import {
   applyWin,
@@ -15,7 +16,6 @@ import {
   recruitTeacher,
   useProgress,
 } from "./progress";
-import QrScanner from "./qr-scanner";
 
 type Screen =
   | { name: "home" }
@@ -43,9 +43,9 @@ export default function Game() {
   const phase = useEventPhase();
 
   function handleQr(text: string) {
-    const action = parseQr(text);
+    const action = parseCode(text);
     if (!action) {
-      setScanError("このQRコードはゲームで使えません。");
+      setScanError("合言葉がちがいます。もう一度たしかめてね。");
       return;
     }
     setScanError(null);
@@ -98,16 +98,14 @@ export default function Game() {
     content = (
       <Explore
         progress={progress}
-        stats={stats}
-        onEncounter={(id) => update(markSeen(id))}
-        onWin={(boss, drops) => update(applyWin(boss, drops))}
+        onCodeword={() => setScreen({ name: "scan" })}
         onHome={() => setScreen({ name: "home" })}
       />
     );
   } else if (screen.name === "scan") {
     content = (
-      <QrScanner
-        onResult={handleQr}
+      <CodewordEntry
+        onSubmit={handleQr}
         error={scanError}
         onClose={() => {
           setScanError(null);

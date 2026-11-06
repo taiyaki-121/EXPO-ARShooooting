@@ -40,14 +40,14 @@ const TABS: { id: Tab; label: string }[] = [
 
 const TUTORIAL_STEPS = [
   {
-    emoji: "📷",
-    title: "QRコードを読み込もう",
-    body: "会場のあちこちにQRコードがあります。ホームの「QR読込」から読み込むと、小ボスが現れたり先生が仲間になったりします。",
+    emoji: "🔑",
+    title: "合言葉を見つけよう",
+    body: "会場のあちこちに合言葉がかくれています。ホームの「合言葉」から入力すると、小ボスが現れたり先生が仲間になったりします。",
   },
   {
     emoji: "🗺️",
     title: "マップで小ボスを探そう",
-    body: "「マップ」から周りにいる小ボスを選んでバトル。攻撃ボタンで攻撃、回避ボタンで敵の攻撃をかわします。",
+    body: "「マップ」で小ボスのいる場所をチェック。近くで合言葉を見つけたら入力してバトル！攻撃ボタンで攻撃、回避ボタンで敵の攻撃をかわします。",
   },
   {
     emoji: "🎒",
@@ -146,8 +146,8 @@ export default function Home({ progress, stats, update, onMap, onScan, onSignOut
             マップ
           </button>
           <button className="btn primary home-action scan-action" onClick={onScan}>
-            <span aria-hidden="true">📷</span>
-            QR読込
+            <span aria-hidden="true">🔑</span>
+            合言葉
           </button>
         </div>
 
@@ -264,7 +264,7 @@ function StatusTab({
                 <span className="teacher-emoji" aria-hidden="true">？</span>
                 <div>
                   <strong>？？？の先生</strong>
-                  <span>会場のQRコードで仲間にしよう</span>
+                  <span>会場の合言葉で仲間にしよう</span>
                 </div>
               </li>
             );
