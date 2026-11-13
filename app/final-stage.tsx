@@ -12,7 +12,8 @@ export function FinalBossScreen({ progress, stats }: { progress: Progress; stats
   const multiplier = finisherMultiplier(progress).toFixed(1);
 
   return (
-    <main className="center-screen">
+    // Background art: public/stage/boss-stage.jpg (falls back to the gradient until it exists)
+    <main className="center-screen boss-stage">
       <div className="card">
         <h1>😈 大ボス戦</h1>
         <p className="sub">ステージイベントが始まりました！ステージに注目してください。</p>

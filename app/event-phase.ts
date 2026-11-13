@@ -60,6 +60,14 @@ export function useEventPhase(): Phase {
   return phase;
 }
 
+// Asks the database whether staffKey is right; the key itself never reaches the browser.
+export async function checkStaffKey(staffKey: string) {
+  if (!supabase) throw new Error("Supabase is not configured");
+  const { data, error } = await supabase.rpc("check_staff_key", { staff_key: staffKey });
+  if (error) throw error;
+  return data === true;
+}
+
 // Staff only: the database rejects the call unless staffKey matches.
 export async function setEventPhase(phase: Phase, staffKey: string) {
   if (!supabase) throw new Error("Supabase is not configured");

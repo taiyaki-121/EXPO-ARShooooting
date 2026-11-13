@@ -25,7 +25,7 @@ import {
   levelUpTeacher,
   toggleEquip,
 } from "./progress";
-import { RankEntry, getLeaderboard, playfabEnabled } from "./playfab";
+import { playfabEnabled } from "./playfab";
 
 type MenuTab = "dex" | "bag" | "titles" | "ranking";
 
@@ -220,7 +220,7 @@ export default function Home({ progress, stats, update, onMap, onScan, onSignOut
                   {menuTab === "dex" && <DexTab progress={progress} />}
                   {menuTab === "bag" && <BagTab progress={progress} />}
                   {menuTab === "titles" && <TitlesTab progress={progress} update={update} />}
-                  {menuTab === "ranking" && <RankingTab />}
+                  {menuTab === "ranking" && <RankingTab progress={progress} />}
                 </div>
                 <div className="sheet-footer">
                   <button
@@ -465,38 +465,23 @@ function BagTab({ progress }: { progress: Progress }) {
   );
 }
 
-function RankingTab() {
-  const [entries, setEntries] = useState<RankEntry[] | null>(null);
-  const [failed, setFailed] = useState(false);
-
-  useEffect(() => {
-    getLeaderboard()
-      .then(setEntries)
-      .catch(() => setFailed(true));
-  }, []);
-
+// The ranking stays secret until staff switch to the results phase (ResultsScreen in
+// final-stage.tsx). This tab never fetches the leaderboard; it only shows your own score.
+function RankingTab({ progress }: { progress: Progress }) {
   return (
     <>
       <h3>スコアランキング</h3>
-      {failed ? (
-        <p className="error">ランキングを読み込めませんでした。</p>
-      ) : !entries ? (
-        <p>読み込み中...</p>
-      ) : entries.length === 0 ? (
-        <p>まだ記録がありません。</p>
-      ) : (
-        <ol className="title-list">
-          {entries.map((e) => (
-            <li key={e.position} className={e.me ? "active" : ""}>
-              <strong>{e.position}位</strong>
-              <div>
-                <strong>{e.name}</strong>
-              </div>
-              <strong>★ {e.score.toLocaleString()}</strong>
-            </li>
-          ))}
-        </ol>
-      )}
+      <div className="ranking-locked">
+        <span className="ranking-locked-icon" aria-hidden="true">
+          🔒
+        </span>
+        <strong>ランキングは最後の結果発表で公開！</strong>
+        <p>だれが1位になるかは、ステージイベントのあとまでヒミツです。</p>
+        <div className="ranking-locked-score">
+          <span>あなたのスコア</span>
+          <strong>★ {progress.score.toLocaleString()} pt</strong>
+        </div>
+      </div>
     </>
   );
 }
