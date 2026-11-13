@@ -24,15 +24,6 @@ export const STAT_LABELS: Record<keyof Stats, string> = {
   rareBonus: "レアドロップ率",
 };
 
-export type MaterialId = "gel" | "scale" | "cloth" | "gear";
-
-export const MATERIALS: Record<MaterialId, { name: string; emoji: string }> = {
-  gel: { name: "ぷるぷるゼリー", emoji: "🟢" },
-  scale: { name: "竜のウロコ", emoji: "🔶" },
-  cloth: { name: "まぼろしの布", emoji: "🌫️" },
-  gear: { name: "古びた歯車", emoji: "⚙️" },
-};
-
 export type ItemDef = {
   id: string;
   name: string;
@@ -57,7 +48,6 @@ export type BossDef = {
   emoji: string;
   hp: number;
   gold: [number, number];
-  material: MaterialId;
   drops: { itemId: string; chance: number }[];
   description: string;
   voice: string;
@@ -70,7 +60,6 @@ export const BOSSES: BossDef[] = [
     emoji: "👾",
     hp: 50,
     gold: [20, 40],
-    material: "gel",
     drops: [
       { itemId: "candy", chance: 0.5 },
       { itemId: "crystal", chance: 0.15 },
@@ -85,7 +74,6 @@ export const BOSSES: BossDef[] = [
     emoji: "🐉",
     hp: 80,
     gold: [50, 80],
-    material: "scale",
     drops: [
       { itemId: "badge", chance: 0.4 },
       { itemId: "flame", chance: 0.15 },
@@ -100,7 +88,6 @@ export const BOSSES: BossDef[] = [
     emoji: "👻",
     hp: 60,
     gold: [30, 50],
-    material: "cloth",
     drops: [
       { itemId: "candy", chance: 0.4 },
       { itemId: "lantern", chance: 0.15 },
@@ -114,7 +101,6 @@ export const BOSSES: BossDef[] = [
     emoji: "🤖",
     hp: 70,
     gold: [40, 60],
-    material: "gear",
     drops: [
       { itemId: "badge", chance: 0.4 },
       { itemId: "chip", chance: 0.05 },
@@ -131,7 +117,6 @@ export type TeacherDef = {
   subject: string;
   description: string;
   boostPerLevel: Partial<Stats>;
-  material: MaterialId;
 };
 
 // Teachers act as equipment: each equipped teacher adds boostPerLevel × level
@@ -143,7 +128,6 @@ export const TEACHERS: TeacherDef[] = [
     subject: "体育",
     description: "体力自慢。最大HPが上がる。",
     boostPerLevel: { maxHp: 20 },
-    material: "gel",
   },
   {
     id: "science",
@@ -152,7 +136,6 @@ export const TEACHERS: TeacherDef[] = [
     subject: "理科",
     description: "弱点を分析して攻撃力アップ。",
     boostPerLevel: { attack: 3 },
-    material: "gear",
   },
   {
     id: "math",
@@ -161,7 +144,6 @@ export const TEACHERS: TeacherDef[] = [
     subject: "数学",
     description: "計算で回避のタイミングを短縮。",
     boostPerLevel: { dodgeCooldownMs: -300 },
-    material: "scale",
   },
   {
     id: "home",
@@ -170,7 +152,55 @@ export const TEACHERS: TeacherDef[] = [
     subject: "家庭科",
     description: "やりくり上手。ゴールドとレア率が上がる。",
     boostPerLevel: { goldBonus: 10, rareBonus: 10 },
-    material: "cloth",
+  },
+  // Placeholder teachers (names, boosts and 合言葉 can be changed freely)
+  {
+    id: "japanese",
+    name: "国語の先生",
+    emoji: "📖",
+    subject: "国語",
+    description: "言葉の力で攻撃力アップ。",
+    boostPerLevel: { attack: 2 },
+  },
+  {
+    id: "english",
+    name: "英語の先生",
+    emoji: "🌍",
+    subject: "英語",
+    description: "世界の知識でレア率アップ。",
+    boostPerLevel: { rareBonus: 15 },
+  },
+  {
+    id: "social",
+    name: "社会の先生",
+    emoji: "🗾",
+    subject: "社会",
+    description: "経済にくわしくゴールドが増える。",
+    boostPerLevel: { goldBonus: 15 },
+  },
+  {
+    id: "music",
+    name: "音楽の先生",
+    emoji: "🎵",
+    subject: "音楽",
+    description: "リズム感で回避が速くなる。",
+    boostPerLevel: { dodgeCooldownMs: -200 },
+  },
+  {
+    id: "art",
+    name: "美術の先生",
+    emoji: "🎨",
+    subject: "美術",
+    description: "ひらめきでHPとレア率が少し上がる。",
+    boostPerLevel: { maxHp: 10, rareBonus: 5 },
+  },
+  {
+    id: "tech",
+    name: "技術の先生",
+    emoji: "🔧",
+    subject: "技術",
+    description: "ものづくりで攻撃力とHPが上がる。",
+    boostPerLevel: { attack: 1, maxHp: 10 },
   },
 ];
 
@@ -178,14 +208,13 @@ export const MAX_TEACHER_LEVEL = 5;
 export const EQUIP_SLOTS = 2;
 
 export function levelUpCost(level: number) {
-  return { gold: level * 100, materials: level * 2 };
+  return { gold: level * 100 };
 }
 
 export type Progress = {
   nickname: string;
   score: number;
   gold: number;
-  materials: Partial<Record<MaterialId, number>>;
   items: Record<string, number>;
   seen: string[];
   defeated: Record<string, number>;
@@ -206,29 +235,68 @@ export type TitleDef = {
   unlocked: (p: Progress) => boolean;
 };
 
+const FAN_WINS = 10;
+
+// The mini-boss this player has beaten most (at least FAN_WINS times), for "〇〇愛好家"
+function favoriteBoss(p: Progress) {
+  const best = BOSSES.reduce<BossDef | null>(
+    (top, b) => ((p.defeated[b.id] ?? 0) > (top ? p.defeated[top.id] ?? 0 : 0) ? b : top),
+    null
+  );
+  return best && (p.defeated[best.id] ?? 0) >= FAN_WINS ? best : null;
+}
+
+// Earning every other title unlocks "collector" (withTitles re-checks until nothing new)
 export const TITLES: TitleDef[] = [
-  { id: "rookie", name: "かけだし探検家", description: "小ボスを初めて倒す", unlocked: (p) => totalWins(p) >= 1 },
-  { id: "hunter", name: "ボスハンター", description: "小ボスを10回倒す", unlocked: (p) => totalWins(p) >= 10 },
+  { id: "rookie", name: "はじめの一歩", description: "小ボスを初めて倒した", unlocked: (p) => totalWins(p) >= 1 },
   {
     id: "scholar",
-    name: "図鑑博士",
+    name: "救世主",
     description: "すべての小ボスを倒す",
     unlocked: (p) => BOSSES.every((b) => p.defeated[b.id]),
   },
+  { id: "veteran", name: "百戦錬磨", description: "小ボスを100回倒す", unlocked: (p) => totalWins(p) >= 100 },
   {
     id: "lucky",
-    name: "強運の持ち主",
-    description: "SRアイテムを手に入れる",
+    name: "お宝ハンター",
+    description: "SRアイテムを集める",
     unlocked: (p) => ITEMS.some((i) => i.rarity === "SR" && p.items[i.id]),
   },
-  { id: "rich", name: "大富豪", description: "ゴールドを1000以上持つ", unlocked: (p) => p.gold >= 1000 },
   {
-    id: "friend",
-    name: "先生のお気に入り",
-    description: "先生を仲間にする",
-    unlocked: (p) => Object.keys(p.teachers).length >= 1,
+    id: "first-item",
+    name: "みならいコレクター",
+    description: "はじめてアイテムをゲットする",
+    unlocked: (p) => ITEMS.some((i) => p.items[i.id]),
+  },
+  {
+    id: "all-items",
+    name: "一流コレクター",
+    description: "すべてのアイテムをゲットする",
+    unlocked: (p) => ITEMS.every((i) => p.items[i.id]),
+  },
+  { id: "rich", name: "貯キング", description: "ゴールドを1000G集める", unlocked: (p) => p.gold >= 1000 },
+  {
+    id: "fan",
+    name: "〇〇愛好家",
+    description: `同じ小ボスを${FAN_WINS}回倒す`,
+    unlocked: (p) => favoriteBoss(p) !== null,
+  },
+  {
+    id: "collector",
+    name: "称号コレクター",
+    description: "すべての称号を集める",
+    unlocked: (p) => TITLES.every((t) => t.id === "collector" || p.titles.includes(t.id)),
   },
 ];
+
+// Display name; "〇〇愛好家" becomes e.g. "スライム愛好家"
+export function titleName(t: TitleDef, p: Progress) {
+  if (t.id === "fan") {
+    const boss = favoriteBoss(p);
+    return boss ? `${boss.name}愛好家` : t.name;
+  }
+  return t.name;
+}
 
 // Stage event start (local time). The last boss fight begins here.
 export const STAGE_EVENT_HOUR = 14;
@@ -248,6 +316,12 @@ export const TEACHER_CODEWORDS: Record<string, string> = {
   science: "じっけん",
   math: "けいさん",
   home: "さいほう",
+  japanese: "ことのは",
+  english: "はろー",
+  social: "ちず",
+  music: "どれみ",
+  art: "えのぐ",
+  tech: "はぐるま",
 };
 
 export function normalizeCodeword(text: string) {

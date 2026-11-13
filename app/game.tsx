@@ -7,7 +7,7 @@ import Entry from "./entry";
 import { useEventPhase } from "./event-phase";
 import Explore from "./explore";
 import { FinalBossScreen, ResultsScreen } from "./final-stage";
-import { BossDef, TITLES, parseCode } from "./game-data";
+import { BossDef, TITLES, parseCode, titleName } from "./game-data";
 import Home from "./home";
 import {
   applyWin,
@@ -148,7 +148,7 @@ export default function Game() {
           <span>
             {notice ?? (
               <>
-                🏅 称号「<strong>{title!.name}</strong>」を獲得！
+                🏅 称号「<strong>{titleName(title!, progress)}</strong>」を獲得！
               </>
             )}
           </span>

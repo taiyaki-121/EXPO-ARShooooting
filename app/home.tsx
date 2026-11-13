@@ -7,9 +7,7 @@ import {
   BossDef,
   EQUIP_SLOTS,
   ITEMS,
-  MATERIALS,
   MAX_TEACHER_LEVEL,
-  MaterialId,
   Progress,
   STAGE_EVENT_HOUR,
   STAGE_EVENT_MINUTE,
@@ -18,6 +16,7 @@ import {
   TEACHERS,
   TITLES,
   levelUpCost,
+  titleName,
 } from "./game-data";
 import {
   canLevelUp,
@@ -28,10 +27,9 @@ import {
 } from "./progress";
 import { RankEntry, getLeaderboard, playfabEnabled } from "./playfab";
 
-type Tab = "status" | "dex" | "bag" | "titles" | "ranking";
+type MenuTab = "dex" | "bag" | "titles" | "ranking";
 
-const TABS: { id: Tab; label: string }[] = [
-  { id: "status", label: "装備" },
+const MENU_TABS: { id: MenuTab; label: string }[] = [
   { id: "dex", label: "図鑑" },
   { id: "bag", label: "バッグ" },
   { id: "titles", label: "称号" },
@@ -42,7 +40,7 @@ const TUTORIAL_STEPS = [
   {
     emoji: "🔑",
     title: "合言葉を見つけよう",
-    body: "会場のあちこちに合言葉がかくれています。ホームの「合言葉」から入力すると、小ボスが現れたり先生が仲間になったりします。",
+    body: "会場のあちこちに合言葉がかくれています。ホームの真ん中の「合言葉」から入力すると、小ボスが現れたり先生が仲間になったりします。",
   },
   {
     emoji: "🗺️",
@@ -52,12 +50,12 @@ const TUTORIAL_STEPS = [
   {
     emoji: "🎒",
     title: "集めて強くなろう",
-    body: "小ボスを倒すとゴールド・素材・アイテムが手に入ります。レアアイテムも落とすかも！図鑑や称号も集めましょう。",
+    body: "小ボスを倒すとゴールドとアイテムが手に入ります。レアアイテムも落とすかも！図鑑や称号も集めましょう。",
   },
   {
     emoji: "🧑‍🏫",
     title: "先生を装備しよう",
-    body: `仲間になった先生は最大${EQUIP_SLOTS}人まで装備でき、ステータスが上がります。ゴールドと素材で先生を強化できます。`,
+    body: `先生は全部で${TEACHERS.length}人。仲間になった先生は「装備」から最大${EQUIP_SLOTS}人まで装備でき、ステータスが上がります。ゴールドで強化もできます。`,
   },
   {
     emoji: "🎤",
@@ -76,10 +74,12 @@ type Props = {
 };
 
 export default function Home({ progress, stats, update, onMap, onScan, onSignOut }: Props) {
-  const [tab, setTab] = useState<Tab>("status");
+  const [sheet, setSheet] = useState<"equip" | "menu" | null>(null);
+  const [menuTab, setMenuTab] = useState<MenuTab>("dex");
   const [showTutorial, setShowTutorial] = useState(!progress.tutorialDone);
   const rate = collectionRate(progress);
   const activeTitle = TITLES.find((t) => t.id === progress.activeTitle);
+  const remaining = TEACHERS.filter((t) => !progress.teachers[t.id]).length;
 
   function closeTutorial() {
     setShowTutorial(false);
@@ -87,36 +87,69 @@ export default function Home({ progress, stats, update, onMap, onScan, onSignOut
   }
 
   return (
-    <div className="home-screen">
-      <header className="map-header">
-        <div className="map-brand">
-          <span className="brand-mark" aria-hidden="true">✦</span>
-          <div>
-            <strong>AR BOSS SHOOTING</strong>
-            <span>個人チャレンジ</span>
-          </div>
+    <div className="home-screen home2">
+      <header className="home2-top">
+        <div className="home2-logo">
+          <span className="home2-logo-mark" aria-hidden="true">✦</span>
+          <strong>
+            AR <span>SHOOTING</span>
+          </strong>
         </div>
-        <div className="map-player">
-          <span className="player-avatar" aria-hidden="true">🧑</span>
-          <div className="player-details">
-            <strong>{progress.nickname}</strong>
-            <span className="player-title">{activeTitle?.name ?? "称号なし"}</span>
-          </div>
-        </div>
-        <button
-          className="btn exit-button"
-          onClick={() => setShowTutorial(true)}
-          aria-label="遊び方"
-        >
-          ？
+        <button className="round-btn" onClick={onMap}>
+          <span aria-hidden="true">🗺️</span>
+          <small>マップ</small>
         </button>
       </header>
 
-      <main className="home-main">
+      <main className="home2-main">
+        <div className="home2-player">
+          <span className="player-avatar" aria-hidden="true">🧑</span>
+          <div className="player-details">
+            <strong>{progress.nickname}</strong>
+            <span className="player-title">{activeTitle ? titleName(activeTitle, progress) : "称号なし"}</span>
+          </div>
+          <div className="home2-wallet">
+            <span>💰 {progress.gold.toLocaleString()}</span>
+            <span>★ {progress.score.toLocaleString()}</span>
+          </div>
+        </div>
+
         <Countdown />
 
-        <section className="home-card summary-card">
-          <div className="summary-rate">
+        <section className="teacher-board">
+          <h2>先生をあつめよう</h2>
+          <div className="teacher-grid">
+            {TEACHERS.map((t) => {
+              const level = progress.teachers[t.id];
+              const equipped = progress.equipped.includes(t.id);
+              return (
+                <button
+                  key={t.id}
+                  className={`teacher-slot ${level ? "got" : ""} ${equipped ? "equipped" : ""}`}
+                  onClick={() => setSheet("equip")}
+                  disabled={!level}
+                  aria-label={level ? `${t.name} Lv.${level}` : "まだ仲間になっていない先生"}
+                >
+                  <span className="teacher-slot-face" aria-hidden="true">
+                    {level ? t.emoji : "？"}
+                  </span>
+                  <small>{level ? t.subject : "？？"}</small>
+                  {equipped && <em>装備中</em>}
+                </button>
+              );
+            })}
+          </div>
+          <p className="teacher-remaining">
+            {remaining > 0 ? (
+              <>
+                残り <strong>{remaining}</strong> 人
+              </>
+            ) : (
+              "全員そろった！🎉"
+            )}
+          </p>
+
+          <div className="home2-rate">
             <div className="summary-rate-heading">
               <span>収集度</span>
               <strong>{Math.round(rate * 100)}%</strong>
@@ -128,59 +161,86 @@ export default function Home({ progress, stats, update, onMap, onScan, onSignOut
               必殺技の倍率 <strong>×{finisherMultiplier(progress).toFixed(1)}</strong>
             </p>
           </div>
-          <div className="summary-stats">
-            <div>
-              <span className="stat-label">ゴールド</span>
-              <strong>💰 {progress.gold.toLocaleString()}</strong>
-            </div>
-            <div>
-              <span className="stat-label">スコア</span>
-              <strong>★ {progress.score.toLocaleString()}</strong>
-            </div>
-          </div>
         </section>
-
-        <div className="home-actions">
-          <button className="btn primary home-action" onClick={onMap}>
-            <span aria-hidden="true">🗺️</span>
-            マップ
-          </button>
-          <button className="btn primary home-action scan-action" onClick={onScan}>
-            <span aria-hidden="true">🔑</span>
-            合言葉
-          </button>
-        </div>
-
-        <nav
-          className="home-tabs"
-          role="tablist"
-          style={{ gridTemplateColumns: `repeat(${TABS.length}, 1fr)` }}
-        >
-          {TABS.map((t) => (
-            <button
-              key={t.id}
-              role="tab"
-              aria-selected={tab === t.id}
-              className={`home-tab ${tab === t.id ? "active" : ""}`}
-              onClick={() => setTab(t.id)}
-            >
-              {t.label}
-            </button>
-          ))}
-        </nav>
-
-        <section className="home-card tab-panel" role="tabpanel">
-          {tab === "status" && <StatusTab progress={progress} stats={stats} update={update} />}
-          {tab === "dex" && <DexTab progress={progress} />}
-          {tab === "bag" && <BagTab progress={progress} />}
-          {tab === "titles" && <TitlesTab progress={progress} update={update} />}
-          {tab === "ranking" && <RankingTab />}
-        </section>
-
-        <button className="btn sign-out" onClick={onSignOut}>
-          データを消して最初から
-        </button>
       </main>
+
+      <nav className="home2-dock">
+        <button className="round-btn" onClick={() => setSheet("equip")}>
+          <span aria-hidden="true">🛡️</span>
+          <small>装備</small>
+        </button>
+        <button className="round-btn big" onClick={onScan}>
+          <span aria-hidden="true">🔑</span>
+          <small>合言葉</small>
+        </button>
+        <button className="round-btn" onClick={() => setSheet("menu")}>
+          <span aria-hidden="true">☰</span>
+          <small>メニュー</small>
+        </button>
+      </nav>
+
+      {sheet && (
+        <div className="modal-backdrop sheet-backdrop" onClick={() => setSheet(null)}>
+          <div
+            className="modal sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-label={sheet === "equip" ? "装備" : "メニュー"}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="sheet-head">
+              <h2>{sheet === "equip" ? "🛡️ 装備" : "☰ メニュー"}</h2>
+              <button className="btn small" onClick={() => setSheet(null)}>
+                閉じる
+              </button>
+            </div>
+
+            {sheet === "equip" ? (
+              <StatusTab progress={progress} stats={stats} update={update} />
+            ) : (
+              <>
+                <nav
+                  className="home-tabs"
+                  role="tablist"
+                  style={{ gridTemplateColumns: `repeat(${MENU_TABS.length}, 1fr)` }}
+                >
+                  {MENU_TABS.map((t) => (
+                    <button
+                      key={t.id}
+                      role="tab"
+                      aria-selected={menuTab === t.id}
+                      className={`home-tab ${menuTab === t.id ? "active" : ""}`}
+                      onClick={() => setMenuTab(t.id)}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </nav>
+                <div role="tabpanel">
+                  {menuTab === "dex" && <DexTab progress={progress} />}
+                  {menuTab === "bag" && <BagTab progress={progress} />}
+                  {menuTab === "titles" && <TitlesTab progress={progress} update={update} />}
+                  {menuTab === "ranking" && <RankingTab />}
+                </div>
+                <div className="sheet-footer">
+                  <button
+                    className="btn"
+                    onClick={() => {
+                      setSheet(null);
+                      setShowTutorial(true);
+                    }}
+                  >
+                    ❓ 遊び方
+                  </button>
+                  <button className="btn sign-out" onClick={onSignOut}>
+                    データを消して最初から
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {showTutorial && <Tutorial onClose={closeTutorial} />}
     </div>
@@ -271,7 +331,6 @@ function StatusTab({
           }
           const equipped = progress.equipped.includes(t.id);
           const cost = levelUpCost(level);
-          const material = MATERIALS[t.material];
           return (
             <li key={t.id} className={`teacher ${equipped ? "equipped" : ""}`}>
               <span className="teacher-emoji" aria-hidden="true">{t.emoji}</span>
@@ -282,8 +341,7 @@ function StatusTab({
                 <span>{t.description}</span>
                 {level < MAX_TEACHER_LEVEL && (
                   <span className="teacher-cost">
-                    強化：💰{cost.gold} ・ {material.emoji}
-                    {material.name}×{cost.materials}
+                    強化：💰{cost.gold}
                   </span>
                 )}
               </div>
@@ -367,12 +425,6 @@ function DexTab({ progress }: { progress: Progress }) {
                 <dd>{open.hp}</dd>
               </div>
               <div>
-                <dt>落とす素材</dt>
-                <dd>
-                  {MATERIALS[open.material].emoji} {MATERIALS[open.material].name}
-                </dd>
-              </div>
-              <div>
                 <dt>撃破数</dt>
                 <dd>{progress.defeated[open.id]}</dd>
               </div>
@@ -390,17 +442,6 @@ function DexTab({ progress }: { progress: Progress }) {
 function BagTab({ progress }: { progress: Progress }) {
   return (
     <>
-      <h3>素材</h3>
-      <ul className="bag-list">
-        {(Object.keys(MATERIALS) as MaterialId[]).map((id) => (
-          <li key={id}>
-            <span aria-hidden="true">{MATERIALS[id].emoji}</span>
-            <span>{MATERIALS[id].name}</span>
-            <strong>×{progress.materials[id] ?? 0}</strong>
-          </li>
-        ))}
-      </ul>
-
       <h3>
         アイテム {ITEMS.filter((i) => progress.items[i.id]).length}/{ITEMS.length}
       </h3>
@@ -464,7 +505,7 @@ function TitlesTab({ progress, update }: { progress: Progress; update: Props["up
   return (
     <>
       <h3>
-        称号 {progress.titles.length}/{TITLES.length}
+        称号 {TITLES.filter((t) => progress.titles.includes(t.id)).length}/{TITLES.length}
       </h3>
       <ul className="title-list">
         {TITLES.map((t) => {
@@ -473,7 +514,7 @@ function TitlesTab({ progress, update }: { progress: Progress; update: Props["up
           return (
             <li key={t.id} className={owned ? (active ? "active" : "") : "locked"}>
               <div>
-                <strong>{owned ? t.name : "？？？"}</strong>
+                <strong>{owned ? titleName(t, progress) : "？？？"}</strong>
                 <span>{t.description}</span>
               </div>
               {owned && (

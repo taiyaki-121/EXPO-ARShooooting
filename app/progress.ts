@@ -25,7 +25,6 @@ export function newProgress(nickname: string): Progress {
     nickname,
     score: 0,
     gold: 0,
-    materials: {},
     items: {},
     seen: [],
     defeated: {},
@@ -56,9 +55,13 @@ function save(p: Progress | null) {
 }
 
 function withTitles(p: Progress): Progress {
-  const earned = TITLES.filter((t) => !p.titles.includes(t.id) && t.unlocked(p));
-  if (earned.length === 0) return p;
-  return { ...p, titles: [...p.titles, ...earned.map((t) => t.id)] };
+  // Loop so a title that depends on other titles ("collector") unlocks in the same update
+  let next = p;
+  for (;;) {
+    const earned = TITLES.filter((t) => !next.titles.includes(t.id) && t.unlocked(next));
+    if (earned.length === 0) return next;
+    next = { ...next, titles: [...next.titles, ...earned.map((t) => t.id)] };
+  }
 }
 
 export function useProgress() {
@@ -175,7 +178,6 @@ export function finisherMultiplier(p: Progress) {
 
 export type Drops = {
   gold: number;
-  material: number;
   items: string[];
 };
 
@@ -184,7 +186,6 @@ export function rollDrops(boss: BossDef, stats: Stats): Drops {
   const baseGold = min + Math.floor(Math.random() * (max - min + 1));
   return {
     gold: Math.round(baseGold * (1 + stats.goldBonus / 100)),
-    material: 1 + (Math.random() < 0.3 ? 1 : 0),
     items: boss.drops
       .filter((d) => Math.random() < d.chance * (1 + stats.rareBonus / 100))
       .map((d) => d.itemId),
@@ -199,10 +200,6 @@ export function applyWin(boss: BossDef, drops: Drops) {
       ...p,
       score: p.score + boss.hp * 10,
       gold: p.gold + drops.gold,
-      materials: {
-        ...p.materials,
-        [boss.material]: (p.materials[boss.material] ?? 0) + drops.material,
-      },
       items,
       seen: p.seen.includes(boss.id) ? p.seen : [...p.seen, boss.id],
       defeated: { ...p.defeated, [boss.id]: (p.defeated[boss.id] ?? 0) + 1 },
@@ -239,7 +236,7 @@ export function canLevelUp(p: Progress, teacherId: string) {
   const level = p.teachers[teacherId] ?? 0;
   if (!teacher || level === 0 || level >= MAX_TEACHER_LEVEL) return false;
   const cost = levelUpCost(level);
-  return p.gold >= cost.gold && (p.materials[teacher.material] ?? 0) >= cost.materials;
+  return p.gold >= cost.gold;
 }
 
 export function levelUpTeacher(teacherId: string) {
@@ -251,10 +248,6 @@ export function levelUpTeacher(teacherId: string) {
     return {
       ...p,
       gold: p.gold - cost.gold,
-      materials: {
-        ...p.materials,
-        [teacher.material]: (p.materials[teacher.material] ?? 0) - cost.materials,
-      },
       teachers: { ...p.teachers, [teacherId]: level + 1 },
     };
   };

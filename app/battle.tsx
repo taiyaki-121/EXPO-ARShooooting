@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { BossDef, ITEMS, MATERIALS, Stats } from "./game-data";
+import { BossDef, ITEMS, Stats } from "./game-data";
 import { Drops, rollDrops } from "./progress";
 import { useBattle } from "./use-battle";
 
@@ -156,10 +156,6 @@ export default function Battle({
             <ul className="drop-list">
               <li>
                 <span aria-hidden="true">💰</span> {drops.gold} G
-              </li>
-              <li>
-                <span aria-hidden="true">{MATERIALS[monster.material].emoji}</span>{" "}
-                {MATERIALS[monster.material].name} ×{drops.material}
               </li>
               {drops.items.map((id) => {
                 const item = ITEMS.find((i) => i.id === id)!;
