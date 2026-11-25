@@ -21,6 +21,7 @@ const BOSS_OFFSETS: Record<string, [number, number]> = {
   shibata: [0.0009, -0.0002],
   futamura: [-0.0002, 0.001],
   kano: [0.0005, 0.0009],
+  kato: [-0.0009, 0.0002],
 };
 
 // label is our own data (boss names), never user input, so it is safe to inline as HTML

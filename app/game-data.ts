@@ -36,13 +36,14 @@ export type ItemDef = {
 export const ITEMS: ItemDef[] = [
   { id: "candy", name: "ふしぎなアメ", emoji: "🍬", rarity: "N", description: "どの先生もポケットに入れている。" },
   { id: "badge", name: "探検家バッジ", emoji: "📛", rarity: "N", description: "会場を歩き回った証。" },
-  { id: "whistle", name: "ホイッスル", emoji: "📯", rarity: "R", description: "ピッと鳴らすと背筋がのびる。" },
+  { id: "whistle", name: "睡眠薬", emoji: "⚡", rarity: "R", description: "どう見てもエナジードリンク。なぜか大澤先生にはよく効く。" },
   { id: "flask", name: "メガネ", emoji: "👓", rarity: "R", description: "八木先生が実際にかけているメガネ。" },
-  { id: "compass", name: "コンパス", emoji: "🧭", rarity: "R", description: "きれいな円が描ける。" },
-  { id: "apron", name: "エプロン", emoji: "🧺", rarity: "R", description: "ほんのりカレーのにおいがする。" },
-  { id: "brush", name: "書道の筆", emoji: "🖌️", rarity: "R", description: "とめ・はね・はらい。" },
-  { id: "passport", name: "パスポート", emoji: "🛂", rarity: "R", description: "どこへでも行けそうな気がする。" },
+  { id: "compass", name: "ビデオカメラ", emoji: "📹", rarity: "R", description: "柴田先生の相棒。何を撮っているのかは謎。" },
+  { id: "apron", name: "ペンライト", emoji: "💖", rarity: "R", description: "大橋先生の推し活の必需品。" },
+  { id: "brush", name: "愛犬のキーホルダー", emoji: "🐕", rarity: "R", description: "鈴木先生の愛犬、ボーダーコリー2匹のキーホルダー。" },
+  { id: "passport", name: "息子の大切なおもちゃ", emoji: "🚂", rarity: "R", description: "二村先生の息子さんの宝物。大事にあつかおう。" },
   { id: "wrench", name: "星空の写真", emoji: "🌌", rarity: "R", description: "狩野先生がドライブ先で撮った一枚。" },
+  { id: "coffee-mill", name: "手挽きコーヒーミル", emoji: "☕", rarity: "R", description: "加藤先生の優雅な時間はここから始まる。" },
   { id: "crown", name: "教頭の王冠", emoji: "👑", rarity: "SR", description: "選ばれし探検家だけが手にする。" },
 ];
 
@@ -82,9 +83,12 @@ export const BOSSES: BossDef[] = [
     attackPercent: 8,
     gold: [30, 50],
     drops: drops("brush"),
-    description: "（紹介文を入れてください）",
-    voice: "（セリフを入れてください）",
+    description:
+      "2匹のボーダーコリーを愛する無類の動物好き。シルエットゆえに、見つけづらいと言われており、構内での目撃情報は貴重。",
+    voice: "うちのボーダーコリー、2匹ともかわいいんですよ。",
     skill: { name: "言霊", description: "攻撃力が上がる", boostPerLevel: { attack: 2 } },
+    image: "/teachers/suzuki.png",
+    card: "/teachers/suzuki-card.png",
   },
   {
     id: "osawa",
@@ -95,9 +99,12 @@ export const BOSSES: BossDef[] = [
     attackPercent: 10,
     gold: [30, 50],
     drops: drops("whistle"),
-    description: "（紹介文を入れてください）",
-    voice: "（セリフを入れてください）",
+    description:
+      "毎日Red bullを一本注入して稼働している。しかし、翼を授かったまま普通に熟睡できることが判明。カフェインへの耐性はS+。",
+    voice: "一本飲んだので、今からちょっと寝ます。",
     skill: { name: "全力ダッシュ", description: "回避が速くなる", boostPerLevel: { dodgeCooldownMs: -250 } },
+    image: "/teachers/osawa.png",
+    card: "/teachers/osawa-card.png",
   },
   {
     id: "yagi",
@@ -124,9 +131,12 @@ export const BOSSES: BossDef[] = [
     attackPercent: 9,
     gold: [30, 50],
     drops: drops("apron"),
-    description: "（紹介文を入れてください）",
-    voice: "（セリフを入れてください）",
+    description:
+      "推し（アイドル）が生きがい。主食はうどんで、高崎駅の丸亀製麺にて麺をすする姿がたびたび目撃されている。",
+    voice: "推しのライブの日は、うどん大盛りで気合いを入れます！",
     skill: { name: "やりくり上手", description: "ゴールドとレア率が上がる", boostPerLevel: { goldBonus: 10, rareBonus: 10 } },
+    image: "/teachers/ohashi.png",
+    card: "/teachers/ohashi-card.png",
   },
   {
     id: "shibata",
@@ -137,9 +147,11 @@ export const BOSSES: BossDef[] = [
     attackPercent: 12,
     gold: [40, 60],
     drops: drops("compass"),
-    description: "（紹介文を入れてください）",
-    voice: "（セリフを入れてください）",
+    description: "キャンプとBBQが大好きなアウトドアタイプ。",
+    voice: "今度のキャンプも、ぜんぶビデオに撮っておきますね。",
     skill: { name: "最適解", description: "回避が速くなる", boostPerLevel: { dodgeCooldownMs: -300 } },
+    image: "/teachers/shibata.png",
+    card: "/teachers/shibata-card.png",
   },
   {
     id: "futamura",
@@ -150,9 +162,12 @@ export const BOSSES: BossDef[] = [
     attackPercent: 10,
     gold: [30, 50],
     drops: drops("passport"),
-    description: "（紹介文を入れてください）",
-    voice: "（セリフを入れてください）",
+    description:
+      "最近楽しみにしていることは息子さんとの散歩。息子さんはトミカとプラレールにはまっているらしい。",
+    voice: "次のブームは、絶対に仮面ライダーだと思うんですよね。",
     skill: { name: "グローバル", description: "レア率が上がる", boostPerLevel: { rareBonus: 15 } },
+    image: "/teachers/futamura.png",
+    card: "/teachers/futamura-card.png",
   },
   {
     id: "kano",
@@ -169,6 +184,22 @@ export const BOSSES: BossDef[] = [
     skill: { name: "ものづくり", description: "攻撃力とゴールドが上がる", boostPerLevel: { attack: 1, goldBonus: 5 } },
     image: "/teachers/kano.png",
     card: "/teachers/kano-card.png",
+  },
+  {
+    id: "kato",
+    name: "加藤先生",
+    emoji: "🧑‍🏫",
+    subject: "加藤",
+    hp: 60,
+    attackPercent: 10,
+    gold: [30, 50],
+    drops: drops("coffee-mill"),
+    description:
+      "豆を挽くところから始める本格派。香りや過程そのものを楽しむ優雅な生息スタイル。",
+    voice: "まずは豆を挽くところから始めましょうか。",
+    skill: { name: "じっくり抽出", description: "回避が速くなりレア率が上がる", boostPerLevel: { dodgeCooldownMs: -150, rareBonus: 8 } },
+    image: "/teachers/kato.png",
+    card: "/teachers/kato-card.png",
   },
 ];
 
@@ -346,6 +377,7 @@ export const BOSS_CODEWORDS: Record<string, string> = {
   shibata: "けいさん",
   futamura: "はろー",
   kano: "はぐるま",
+  kato: "こーひー",
 };
 
 export function normalizeCodeword(text: string) {
