@@ -4086,3 +4086,136 @@ body,
   color: var(--neon-cyan, #4a70f5);
   font-weight: 700;
 }
+
+/* 図鑑 tiles (home.tsx DexTab). --h = teacher hue from BossDef.hue */
+.dex-tiles {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.dex-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.dex-tile:disabled {
+  cursor: default;
+}
+
+.dex-tile-art {
+  position: relative;
+  display: block;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 10px;
+  border: 2px solid #e9c46a;
+  background:
+    radial-gradient(circle at 50% 38%, hsla(calc(var(--h) + 40), 100%, 82%, 0.95), transparent 55%),
+    conic-gradient(from 200deg at 50% 60%, hsl(var(--h), 85%, 55%), hsl(calc(var(--h) + 60), 85%, 60%),
+      hsl(calc(var(--h) + 140), 80%, 60%), hsl(calc(var(--h) - 60), 85%, 58%), hsl(var(--h), 85%, 55%));
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4) inset, 0 3px 8px rgba(0, 0, 0, 0.35);
+  transition: transform 0.15s;
+}
+
+.dex-tile.caught:active .dex-tile-art {
+  transform: scale(0.94);
+}
+
+.dex-tile.caught .dex-tile-art {
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4) inset, 0 0 10px hsla(var(--h), 100%, 65%, 0.7);
+}
+
+.dex-tile-art img {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 108%;
+  height: 108%;
+  transform: translateX(-50%);
+  object-fit: cover;
+  object-position: center 10%;
+  filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.8));
+}
+
+.dex-tile-no {
+  position: absolute;
+  z-index: 1;
+  top: 3px;
+  left: 4px;
+  padding: 0 4px;
+  border-radius: 6px;
+  background: rgba(10, 8, 30, 0.6);
+  color: #ffeab0;
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.dex-tile-glyph {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 1.8rem;
+  font-weight: 900;
+}
+
+/* met but not beaten: a black silhouette on a muted tile */
+.dex-tile.seen .dex-tile-art {
+  filter: saturate(0.35) brightness(0.75);
+}
+
+.dex-tile.seen .dex-tile-art img {
+  filter: brightness(0) drop-shadow(0 0 2px rgba(255, 255, 255, 0.6));
+}
+
+/* never met: dark, dashed */
+.dex-tile.unknown .dex-tile-art {
+  border: 2px dashed rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: none;
+}
+
+.dex-tile-stars {
+  color: #ffd34d;
+  font-size: 0.62rem;
+  letter-spacing: 1px;
+  text-align: center;
+  text-shadow: 0 0 4px rgba(255, 200, 60, 0.6);
+}
+
+.dex-tile:not(.caught) .dex-tile-stars {
+  color: rgba(255, 255, 255, 0.3);
+  text-shadow: none;
+}
+
+/* the card pops in when a tile is tapped */
+.dex-card img {
+  animation: dex-card-in 0.45s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+
+@keyframes dex-card-in {
+  from {
+    opacity: 0;
+    transform: scale(0.6) rotateY(80deg);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dex-card img {
+    animation: none;
+  }
+}

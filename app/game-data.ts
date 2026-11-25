@@ -63,6 +63,8 @@ export type BossDef = {
   // 3D model) and a finished 図鑑 card shown in the 図鑑 detail view.
   image?: string;
   card?: string;
+  // Theme colour (hue 0-360) for the 図鑑 tile; matches the teacher's card.
+  hue?: number;
 };
 
 const drops = (itemId: string) => [
@@ -89,6 +91,7 @@ export const BOSSES: BossDef[] = [
     skill: { name: "言霊", description: "攻撃力が上がる", boostPerLevel: { attack: 2 } },
     image: "/teachers/suzuki.png",
     card: "/teachers/suzuki-card.png",
+    hue: 180,
   },
   {
     id: "osawa",
@@ -105,6 +108,7 @@ export const BOSSES: BossDef[] = [
     skill: { name: "全力ダッシュ", description: "回避が速くなる", boostPerLevel: { dodgeCooldownMs: -250 } },
     image: "/teachers/osawa.png",
     card: "/teachers/osawa-card.png",
+    hue: 48,
   },
   {
     id: "yagi",
@@ -121,6 +125,7 @@ export const BOSSES: BossDef[] = [
     skill: { name: "弱点分析", description: "攻撃力が上がる", boostPerLevel: { attack: 3 } },
     image: "/teachers/yagi.png",
     card: "/teachers/yagi-card.png",
+    hue: 145,
   },
   {
     id: "ohashi",
@@ -137,6 +142,7 @@ export const BOSSES: BossDef[] = [
     skill: { name: "やりくり上手", description: "ゴールドとレア率が上がる", boostPerLevel: { goldBonus: 10, rareBonus: 10 } },
     image: "/teachers/ohashi.png",
     card: "/teachers/ohashi-card.png",
+    hue: 325,
   },
   {
     id: "shibata",
@@ -152,6 +158,7 @@ export const BOSSES: BossDef[] = [
     skill: { name: "最適解", description: "回避が速くなる", boostPerLevel: { dodgeCooldownMs: -300 } },
     image: "/teachers/shibata.png",
     card: "/teachers/shibata-card.png",
+    hue: 18,
   },
   {
     id: "futamura",
@@ -168,6 +175,7 @@ export const BOSSES: BossDef[] = [
     skill: { name: "グローバル", description: "レア率が上がる", boostPerLevel: { rareBonus: 15 } },
     image: "/teachers/futamura.png",
     card: "/teachers/futamura-card.png",
+    hue: 205,
   },
   {
     id: "kano",
@@ -184,6 +192,7 @@ export const BOSSES: BossDef[] = [
     skill: { name: "ものづくり", description: "攻撃力とゴールドが上がる", boostPerLevel: { attack: 1, goldBonus: 5 } },
     image: "/teachers/kano.png",
     card: "/teachers/kano-card.png",
+    hue: 268,
   },
   {
     id: "kato",
@@ -200,6 +209,7 @@ export const BOSSES: BossDef[] = [
     skill: { name: "じっくり抽出", description: "回避が速くなりレア率が上がる", boostPerLevel: { dodgeCooldownMs: -150, rareBonus: 8 } },
     image: "/teachers/kato.png",
     card: "/teachers/kato-card.png",
+    hue: 32,
   },
 ];
 

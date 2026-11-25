@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import {
   BASE_STATS,
   BOSSES,
@@ -420,32 +420,37 @@ function DexTab({ progress }: { progress: Progress }) {
       <h3>
         先生図鑑 {found}/{BOSSES.length}
       </h3>
-      <div className="dex-grid">
+      {/* Tile grid: tap a defeated teacher to open their card. Met-but-unbeaten teachers
+          show as a silhouette; unmet ones as "?". Stars = skill level. */}
+      <div className="dex-tiles">
         {BOSSES.map((b, i) => {
           const wins = progress.defeated[b.id] ?? 0;
           const seen = progress.seen.includes(b.id);
+          const level = skillLevel(wins);
+          const state = wins ? "caught" : seen ? "seen" : "unknown";
           return (
             <button
               key={b.id}
-              className={`dex-cell ${wins ? "caught" : seen ? "seen" : ""}`}
+              className={`dex-tile ${state}`}
+              style={{ "--h": b.hue ?? 230 } as CSSProperties}
               onClick={() => wins && setOpen(b)}
               disabled={!wins}
+              aria-label={wins ? `${b.name}のカードを見る` : seen ? "まだ倒していない先生" : "まだ会っていない先生"}
             >
-              <span className="dex-no">No.{String(i + 1).padStart(2, "0")}</span>
-              <span className="dex-emoji" aria-hidden="true">
-                {wins && b.image ? (
+              <span className="dex-tile-art">
+                <span className="dex-tile-no">{String(i + 1).padStart(3, "0")}</span>
+                {state !== "unknown" && b.image ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img className="dex-thumb" src={b.image} alt="" />
-                ) : wins ? (
-                  b.emoji
-                ) : seen ? (
-                  "❔"
+                  <img src={b.image} alt="" draggable={false} />
                 ) : (
-                  "？"
+                  <span className="dex-tile-glyph" aria-hidden="true">
+                    {state === "unknown" ? "？" : b.emoji}
+                  </span>
                 )}
               </span>
-              <span className="dex-name">{seen ? b.name : "？？？"}</span>
-              {wins > 0 && <span className="dex-wins">撃破 {wins}</span>}
+              <span className="dex-tile-stars" aria-hidden="true">
+                {Array.from({ length: MAX_SKILL_LEVEL }, (_, k) => (k < level ? "★" : "☆")).join("")}
+              </span>
             </button>
           );
         })}
@@ -466,9 +471,10 @@ function DexTab({ progress }: { progress: Progress }) {
                 <small>タッチでボイス 🔊</small>
               </button>
             )}
-            <h3>{open.name}</h3>
+            {/* The card already shows the name and 生態メモ */}
+            {!open.card && <h3>{open.name}</h3>}
             <p className="dex-voice">「{open.voice}」</p>
-            <p>{open.description}</p>
+            {!open.card && <p>{open.description}</p>}
             <dl className="stat-list">
               <div>
                 <dt>HP</dt>
