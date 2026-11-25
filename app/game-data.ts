@@ -37,7 +37,7 @@ export const ITEMS: ItemDef[] = [
   { id: "candy", name: "ふしぎなアメ", emoji: "🍬", rarity: "N", description: "どの先生もポケットに入れている。" },
   { id: "badge", name: "探検家バッジ", emoji: "📛", rarity: "N", description: "会場を歩き回った証。" },
   { id: "whistle", name: "ホイッスル", emoji: "📯", rarity: "R", description: "ピッと鳴らすと背筋がのびる。" },
-  { id: "flask", name: "フラスコ", emoji: "⚗️", rarity: "R", description: "中身は秘密の実験液。" },
+  { id: "flask", name: "メガネ", emoji: "👓", rarity: "R", description: "八木先生が実際にかけているメガネ。" },
   { id: "compass", name: "コンパス", emoji: "🧭", rarity: "R", description: "きれいな円が描ける。" },
   { id: "apron", name: "エプロン", emoji: "🧺", rarity: "R", description: "ほんのりカレーのにおいがする。" },
   { id: "brush", name: "書道の筆", emoji: "🖌️", rarity: "R", description: "とめ・はね・はらい。" },
@@ -108,9 +108,12 @@ export const BOSSES: BossDef[] = [
     attackPercent: 14,
     gold: [60, 90],
     drops: drops("flask"),
-    description: "（紹介文を入れてください）",
-    voice: "（セリフを入れてください）",
+    description:
+      "投資と家族への愛で構成されている極めてシンプルな生き物。物欲センサーが完全に欠落している。最近の悩みは娘にパパよりママのほうが好きと言われていること。",
+    voice: "物欲？ ないですね。あるのは投資と家族への愛だけです。",
     skill: { name: "弱点分析", description: "攻撃力が上がる", boostPerLevel: { attack: 3 } },
+    image: "/teachers/yagi.png",
+    card: "/teachers/yagi-card.png",
   },
   {
     id: "ohashi",
