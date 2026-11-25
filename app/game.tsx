@@ -7,15 +7,10 @@ import Entry from "./entry";
 import { useEventPhase } from "./event-phase";
 import Explore from "./explore";
 import { FinalBossScreen, ResultsScreen } from "./final-stage";
-import { BossDef, TITLES, parseCode, titleName } from "./game-data";
+import { BossDef, TITLES, needsStarterGear, parseCode, titleName } from "./game-data";
 import Home from "./home";
-import {
-  applyWin,
-  computeStats,
-  markSeen,
-  recruitTeacher,
-  useProgress,
-} from "./progress";
+import { applyWin, chooseStarterGear, computeStats, markSeen, useProgress } from "./progress";
+import StarterGear from "./starter-gear";
 
 type Screen =
   | { name: "home" }
@@ -43,31 +38,20 @@ export default function Game() {
   const phase = useEventPhase();
 
   function handleQr(text: string) {
-    const action = parseCode(text);
-    if (!action) {
+    const boss = parseCode(text);
+    if (!boss) {
       setScanError("合言葉がちがいます。もう一度たしかめてね。");
       return;
     }
     setScanError(null);
-    if (action.kind === "boss") {
-      // Mini-bosses are only for the collect phase
-      if (phase !== "collect") {
-        setNotice("小ボスの時間は終わりました。");
-        setScreen({ name: "home" });
-        return;
-      }
-      update(markSeen(action.boss.id));
-      setScreen({ name: "battle", boss: action.boss });
+    // Mini-bosses are only for the collect phase
+    if (phase !== "collect") {
+      setNotice("小ボスの時間は終わりました。");
+      setScreen({ name: "home" });
       return;
     }
-    const { teacher } = action;
-    if (progress?.teachers[teacher.id]) {
-      setNotice(`${teacher.emoji} ${teacher.name}はすでに仲間です。`);
-    } else {
-      update(recruitTeacher(teacher.id));
-      setNotice(`${teacher.emoji} ${teacher.name}が仲間になった！`);
-    }
-    setScreen({ name: "home" });
+    update(markSeen(boss.id));
+    setScreen({ name: "battle", boss });
   }
 
   useEffect(() => {
@@ -94,6 +78,9 @@ export default function Game() {
       ) : (
         <ResultsScreen progress={progress} />
       );
+  } else if (screen.name !== "battle" && needsStarterGear(progress)) {
+    // First clear: pick 1 of 3 starter gear before anything else
+    content = <StarterGear onChoose={(id) => update(chooseStarterGear(id))} />;
   } else if (screen.name === "map") {
     content = (
       <Explore
@@ -118,8 +105,7 @@ export default function Game() {
     content = (
       <Battle
         monster={boss}
-        nickname={progress.nickname}
-        score={progress.score}
+        progress={progress}
         stats={stats}
         onFinish={(drops) => {
           if (drops) update(applyWin(boss, drops));

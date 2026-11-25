@@ -25,7 +25,7 @@ export default function CodewordEntry({ onSubmit, onClose, error }: Props) {
         <p className="sub">
           会場のどこかに合言葉がかくれています。
           <br />
-          見つけて入力すると、小ボスが現れたり先生が仲間になったりします。
+          見つけて入力すると、先生とのバトルが始まります。
         </p>
         <input
           value={word}

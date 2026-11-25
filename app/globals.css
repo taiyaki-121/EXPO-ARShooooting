@@ -263,6 +263,22 @@ input {
   opacity: 0.6;
 }
 
+/* Teacher 3D model (teacher-model.tsx): transparent canvas over the camera feed */
+.battle-model {
+  position: absolute;
+  top: 16%;
+  bottom: 150px;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+
+.battle-model.dodging {
+  opacity: 0.6;
+}
+
 @keyframes float {
   0%,
   100% {
@@ -3346,4 +3362,860 @@ body,
   color: #ff6a3d;
   font-size: 1.1rem;
   font-weight: 900;
+}
+
+/* =====================================================================
+   Neon player theme — matches the staff panel (/admin).
+   Appended last and prefixed with :root so it overrides the bright UI above.
+   ===================================================================== */
+:root {
+  --neon-cyan: #19e3f0;
+  --neon-pink: #ff3d8b;
+  --neon-gold: #ffd34d;
+  --neon-ink: #0b0824;
+  --glass: rgba(11, 8, 36, 0.72);
+  --glass-soft: rgba(255, 255, 255, 0.06);
+  --glass-line: rgba(255, 255, 255, 0.14);
+  --text-dim: rgba(255, 255, 255, 0.68);
+  --neon-bg:
+    radial-gradient(ellipse at 10% -10%, rgba(255, 61, 139, 0.45), transparent 50%),
+    radial-gradient(ellipse at 100% 110%, rgba(25, 227, 240, 0.35), transparent 50%),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 28px),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 28px),
+    linear-gradient(160deg, #1a0f4d 0%, #2d1a8a 55%, #12286e 100%);
+}
+
+:root body {
+  background: #1a0f4d;
+  color: #fff;
+}
+
+/* Page backgrounds */
+:root .home2,
+:root .entry-page,
+:root .center-screen:not(.boss-stage),
+:root .map-screen {
+  background: var(--neon-bg);
+  background-attachment: scroll;
+  color: #fff;
+}
+
+/* Shared glass panel look */
+:root .home2-player,
+:root .teacher-board,
+:root .entry-card,
+:root .card,
+:root .map-header,
+:root .map-footer {
+  background: var(--glass);
+  border: 1.5px solid var(--glass-line);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04) inset, 0 18px 40px rgba(5, 3, 20, 0.45);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: #fff;
+}
+
+/* ---------- Inputs (entry, 合言葉) ---------- */
+:root .entry-card input,
+:root .codeword-card input,
+:root .card input {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1.5px solid rgba(255, 255, 255, 0.2);
+  border-radius: 14px;
+  color: #fff;
+  box-shadow: none;
+  outline: none;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+:root .entry-card input::placeholder,
+:root .codeword-card input::placeholder,
+:root .card input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+:root .entry-card input:focus,
+:root .codeword-card input:focus,
+:root .card input:focus {
+  border-color: var(--neon-cyan);
+  box-shadow: 0 0 0 4px rgba(25, 227, 240, 0.2);
+}
+
+/* ---------- Entry ---------- */
+:root .entry-card {
+  border-radius: 24px;
+  border-color: color-mix(in srgb, var(--neon-cyan) 55%, transparent);
+  box-shadow: 0 0 32px rgba(25, 227, 240, 0.25), 0 18px 40px rgba(5, 3, 20, 0.45);
+}
+
+:root .entry-card h1,
+:root .entry-card h2,
+:root .entry-card-heading strong,
+:root .entry-card-heading h2,
+:root .entry-card label,
+:root .entry-card label span {
+  color: #fff;
+}
+
+:root .entry-card-heading p,
+:root .entry-card-heading span,
+:root .field-hint {
+  color: var(--text-dim);
+}
+
+:root .section-number {
+  background: linear-gradient(135deg, var(--neon-pink), #7b3df5);
+  box-shadow: 0 0 16px rgba(255, 61, 139, 0.5);
+  color: #fff;
+}
+
+/* ---------- Home ---------- */
+:root .home2-logo {
+  background: var(--glass);
+  border: 1.5px solid color-mix(in srgb, var(--neon-cyan) 55%, transparent);
+  box-shadow: 0 0 22px rgba(25, 227, 240, 0.3);
+}
+
+:root .home2-logo strong {
+  color: #fff;
+  text-shadow: 0 0 14px rgba(25, 227, 240, 0.6);
+}
+
+:root .home2-player .player-details strong {
+  color: #fff;
+}
+
+:root .home2-player .player-title {
+  color: var(--neon-gold);
+}
+
+:root .home2-wallet span {
+  color: #fff;
+}
+
+:root .countdown {
+  background: var(--glass);
+  border: 1.5px solid color-mix(in srgb, var(--neon-pink) 60%, transparent);
+  box-shadow: 0 0 26px rgba(255, 61, 139, 0.3);
+}
+
+:root .teacher-board {
+  border-radius: 24px;
+  border-top: 1.5px solid color-mix(in srgb, var(--neon-cyan) 60%, transparent);
+}
+
+:root .teacher-board h2 {
+  color: #fff;
+  text-shadow: 0 0 14px rgba(25, 227, 240, 0.55);
+}
+
+:root .teacher-slot .teacher-slot-face {
+  background: rgba(255, 255, 255, 0.04);
+  border: 2px dashed rgba(255, 255, 255, 0.22);
+  color: rgba(255, 255, 255, 0.35);
+}
+
+:root .teacher-slot small {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+:root .teacher-slot.got .teacher-slot-face {
+  background: radial-gradient(circle at 50% 35%, #fff5dc, #ffd9a0);
+  border: 2px solid color-mix(in srgb, var(--neon-gold) 80%, transparent);
+  box-shadow: 0 0 14px rgba(255, 211, 77, 0.45);
+}
+
+:root .teacher-slot.got small {
+  color: #fff;
+}
+
+:root .teacher-slot.equipped .teacher-slot-face {
+  border-color: var(--neon-cyan);
+  box-shadow: 0 0 0 3px rgba(25, 227, 240, 0.35), 0 0 22px rgba(25, 227, 240, 0.6);
+}
+
+:root .teacher-slot em {
+  background: var(--neon-cyan);
+  color: var(--neon-ink);
+}
+
+:root .teacher-remaining {
+  color: var(--text-dim);
+}
+
+:root .teacher-remaining strong {
+  color: var(--neon-pink);
+  text-shadow: 0 0 12px rgba(255, 61, 139, 0.6);
+}
+
+:root .home2-rate {
+  border-top-color: var(--glass-line);
+}
+
+:root .home2-rate span,
+:root .home2-rate p {
+  color: var(--text-dim);
+}
+
+:root .home2-rate .summary-rate-heading strong {
+  background: linear-gradient(120deg, var(--neon-cyan), var(--neon-pink));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+:root .home2-rate p strong {
+  color: var(--neon-pink);
+}
+
+:root .progress-bar {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+:root .progress-fill {
+  background: linear-gradient(90deg, var(--neon-cyan), #7b3df5, var(--neon-pink));
+  box-shadow: 0 0 12px rgba(25, 227, 240, 0.5);
+}
+
+:root .home2-dock {
+  background: linear-gradient(180deg, transparent, rgba(11, 8, 36, 0.85) 45%);
+}
+
+:root .round-btn {
+  border-color: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 0 18px rgba(25, 227, 240, 0.45);
+}
+
+:root .round-btn.big {
+  box-shadow: 0 0 28px rgba(255, 61, 139, 0.65);
+}
+
+/* ---------- Bottom sheets (装備 / メニュー) and modals ---------- */
+:root .modal-backdrop {
+  background: rgba(5, 3, 20, 0.6);
+}
+
+:root .modal,
+:root .modal.sheet {
+  background: linear-gradient(180deg, #1d1257 0%, #120b38 100%);
+  border: 1.5px solid var(--glass-line);
+  border-top: 2px solid color-mix(in srgb, var(--neon-cyan) 70%, transparent);
+  box-shadow: 0 -10px 40px rgba(25, 227, 240, 0.18);
+  color: #fff;
+}
+
+:root .modal h2,
+:root .modal h3,
+:root .modal strong {
+  color: #fff;
+}
+
+:root .modal p,
+:root .modal span,
+:root .modal small {
+  color: var(--text-dim);
+}
+
+:root .sheet-head .btn.small,
+:root .modal .btn.small:not(.primary) {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+:root .home-tabs {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--glass-line);
+}
+
+:root .home-tab {
+  color: rgba(255, 255, 255, 0.65);
+  background: transparent;
+}
+
+:root .home-tab.active {
+  background: linear-gradient(120deg, rgba(25, 227, 240, 0.28), rgba(123, 61, 245, 0.35));
+  color: #fff;
+  box-shadow: 0 0 0 1px rgba(25, 227, 240, 0.6) inset, 0 0 14px rgba(25, 227, 240, 0.35);
+}
+
+/* Cards and rows inside sheets */
+:root .dex-cell,
+:root .bag-list li,
+:root .title-list li,
+:root .teacher-list li,
+:root .teacher,
+:root .stat-list li {
+  background: var(--glass-soft);
+  border: 1px solid var(--glass-line);
+  color: #fff;
+}
+
+:root .dex-cell:not(.locked) {
+  border-color: color-mix(in srgb, var(--neon-gold) 70%, transparent);
+  box-shadow: 0 0 14px rgba(255, 211, 77, 0.25);
+}
+
+:root .dex-cell.locked,
+:root .bag-list li.locked,
+:root .title-list li.locked,
+:root .teacher.locked {
+  background: rgba(255, 255, 255, 0.025);
+  border-style: dashed;
+  opacity: 0.75;
+}
+
+:root .dex-no,
+:root .dex-wins,
+:root .dex-voice {
+  color: var(--neon-cyan);
+}
+
+:root .dex-name {
+  color: #fff;
+}
+
+:root .title-list li.active,
+:root .teacher.equipped {
+  border-color: var(--neon-cyan);
+  background: rgba(25, 227, 240, 0.12);
+  box-shadow: 0 0 14px rgba(25, 227, 240, 0.3);
+}
+
+:root .title-list span,
+:root .teacher small {
+  color: var(--text-dim);
+}
+
+:root .teacher .teacher-cost {
+  color: var(--neon-gold);
+}
+
+:root .sheet-footer .btn:not(.sign-out) {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--glass-line);
+  color: #fff;
+}
+
+:root .sheet .sign-out {
+  background: transparent;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+:root .ranking-locked {
+  background: linear-gradient(160deg, rgba(123, 61, 245, 0.2), rgba(25, 227, 240, 0.12));
+  border: 1.5px dashed rgba(25, 227, 240, 0.5);
+}
+
+:root .ranking-locked > strong {
+  color: #fff;
+  text-shadow: 0 0 12px rgba(25, 227, 240, 0.6);
+}
+
+:root .ranking-locked-score {
+  background: rgba(0, 0, 0, 0.3);
+  border-color: var(--glass-line);
+}
+
+:root .ranking-locked-score strong {
+  color: var(--neon-gold);
+}
+
+/* ---------- 合言葉 ---------- */
+:root .codeword-card {
+  border-color: color-mix(in srgb, var(--neon-gold) 55%, transparent);
+  box-shadow: 0 0 32px rgba(255, 211, 77, 0.22), 0 18px 40px rgba(5, 3, 20, 0.45);
+}
+
+:root .codeword-card input {
+  text-align: center;
+  font-size: 1.3rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+:root .card .btn:not(.primary) {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--glass-line);
+  color: #fff;
+}
+
+/* ---------- Map ---------- */
+:root .map-header,
+:root .map-footer {
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+}
+
+:root .map-header {
+  border-top: none;
+  border-bottom-color: color-mix(in srgb, var(--neon-cyan) 50%, transparent);
+}
+
+:root .map-footer {
+  border-bottom: none;
+  border-top-color: color-mix(in srgb, var(--neon-cyan) 50%, transparent);
+}
+
+:root .map-brand strong,
+:root .map-player strong,
+:root .map-stat strong {
+  color: #fff;
+}
+
+:root .map-brand span,
+:root .map-stat .stat-label,
+:root .gps-status {
+  color: var(--text-dim);
+}
+
+:root .map-hint {
+  background: var(--glass);
+  border: 1px solid color-mix(in srgb, var(--neon-cyan) 55%, transparent);
+  color: #fff;
+}
+
+:root .exit-button {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--glass-line);
+  color: #fff;
+}
+
+/* ---------- Battle ---------- */
+:root .battle-screen {
+  background: var(--neon-bg);
+}
+
+:root .battle-score,
+:root .hp-block {
+  background: rgba(11, 8, 36, 0.66);
+  border: 1.5px solid var(--glass-line);
+  box-shadow: 0 10px 26px rgba(5, 3, 20, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: #fff;
+}
+
+:root .battle-score span,
+:root .hp-label span {
+  color: var(--text-dim);
+}
+
+:root .battle-score strong {
+  color: var(--neon-gold);
+  text-shadow: 0 0 12px rgba(255, 211, 77, 0.5);
+}
+
+:root .hp-label strong {
+  color: #fff;
+}
+
+:root .hp-bar {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+:root .hp-fill.monster {
+  background: linear-gradient(90deg, var(--neon-pink), #ff6a3d);
+  box-shadow: 0 0 10px rgba(255, 61, 139, 0.7);
+}
+
+:root .hp-fill.player {
+  background: linear-gradient(90deg, #2ee6a0, var(--neon-cyan));
+  box-shadow: 0 0 10px rgba(25, 227, 240, 0.7);
+}
+
+:root .hp-badge {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* The camera notice used to sit on top of the HP cards; keep it above the message instead */
+:root .camera-error {
+  top: auto;
+  bottom: 150px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--glass-line);
+  background: rgba(11, 8, 36, 0.75);
+  color: var(--text-dim);
+  font-size: 0.78rem;
+  text-align: center;
+}
+
+:root .result-overlay {
+  background: rgba(11, 8, 36, 0.82);
+}
+
+:root .result-score {
+  background: var(--glass-soft);
+  border: 1px solid var(--glass-line);
+}
+
+:root .drop-list li {
+  background: var(--glass-soft);
+  border: 1px solid var(--glass-line);
+  color: #fff;
+}
+
+/* ---------- Toast ---------- */
+:root .toast {
+  background: var(--glass);
+  border: 1.5px solid color-mix(in srgb, var(--neon-cyan) 60%, transparent);
+  box-shadow: 0 0 24px rgba(25, 227, 240, 0.35);
+  color: #fff;
+  backdrop-filter: blur(10px);
+}
+
+/* Neon theme fixes: keep emoji fully opaque (dim text colours fade colour emoji on Windows) */
+:root .dex-emoji,
+:root .teacher-emoji,
+:root .tutorial-emoji,
+:root .codeword-emoji,
+:root .dex-portrait > span,
+:root .bag-list li > span:first-child,
+:root .drop-list li > span:first-child,
+:root .teacher-slot.got .teacher-slot-face,
+:root .hp-badge,
+:root .player-avatar,
+:root .round-btn > span {
+  color: #fff;
+}
+
+/* 図鑑 cells: unknown = dashed, seen = cyan, defeated = gold */
+:root .dex-cell,
+:root .dex-cell:not(.locked) {
+  border: 1.5px dashed rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.025);
+  box-shadow: none;
+}
+
+:root .dex-cell .dex-no,
+:root .dex-cell .dex-name {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+:root .dex-cell.seen {
+  border: 1.5px solid color-mix(in srgb, var(--neon-cyan) 55%, transparent);
+  background: var(--glass-soft);
+}
+
+:root .dex-cell.caught {
+  border: 1.5px solid color-mix(in srgb, var(--neon-gold) 75%, transparent);
+  background: linear-gradient(160deg, rgba(255, 211, 77, 0.14), rgba(255, 255, 255, 0.04));
+  box-shadow: 0 0 16px rgba(255, 211, 77, 0.28);
+}
+
+:root .dex-cell.seen .dex-name,
+:root .dex-cell.caught .dex-name {
+  color: #fff;
+}
+
+:root .dex-cell.caught .dex-no,
+:root .dex-cell.caught .dex-wins {
+  color: var(--neon-gold);
+}
+
+:root .dex-portrait {
+  background: radial-gradient(circle at 50% 40%, rgba(123, 61, 245, 0.55), rgba(11, 8, 36, 0.6));
+  border: 1.5px solid color-mix(in srgb, var(--neon-cyan) 55%, transparent);
+  box-shadow: 0 0 24px rgba(25, 227, 240, 0.3);
+}
+
+/* Stat rows (装備 sheet and boss detail use <dl><div>) */
+:root .modal .stat-list > div {
+  background: var(--glass-soft);
+  border: 1px solid var(--glass-line);
+  color: #fff;
+}
+
+:root .modal .stat-list dt {
+  color: var(--text-dim);
+}
+
+:root .modal .stat-list dd {
+  color: #fff;
+}
+
+:root .modal .stat-list > div.boosted {
+  border-color: color-mix(in srgb, var(--neon-cyan) 60%, transparent);
+}
+
+:root .modal .stat-list > div.boosted dd {
+  color: var(--neon-cyan);
+  text-shadow: 0 0 10px rgba(25, 227, 240, 0.6);
+}
+
+/* Plain buttons inside dark modals (tutorial 戻る / スキップ) */
+:root .modal .btn:not(.primary):not(.small):not(.sign-out) {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--glass-line);
+  color: #fff;
+}
+
+:root .tutorial-dots span {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+:root .tutorial-dots span.active {
+  background: var(--neon-cyan);
+  box-shadow: 0 0 10px var(--neon-cyan);
+}
+
+/* Bag rows by rarity */
+:root .bag-list li.rarity-R {
+  border-color: color-mix(in srgb, var(--neon-cyan) 55%, transparent);
+}
+
+:root .bag-list li.rarity-SR {
+  border-color: color-mix(in srgb, var(--neon-gold) 75%, transparent);
+  box-shadow: 0 0 14px rgba(255, 211, 77, 0.28);
+}
+
+:root .bag-list li strong {
+  color: var(--neon-gold);
+}
+
+/* Neon theme, round 2 */
+:root .teacher-emoji {
+  width: 48px;
+  height: 48px;
+  background: radial-gradient(circle at 50% 35%, #fff5dc, #ffd9a0);
+  border: 1.5px solid color-mix(in srgb, var(--neon-gold) 70%, transparent);
+  font-size: 1.7rem;
+  line-height: 1;
+}
+
+:root .teacher.locked .teacher-emoji {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1.5px dashed rgba(255, 255, 255, 0.25);
+  color: rgba(255, 255, 255, 0.5);
+}
+
+:root .teacher strong {
+  color: #fff;
+}
+
+:root .teacher strong small {
+  color: var(--neon-cyan);
+}
+
+/* Bag: readable names, bigger icons, badges that fit the dark theme */
+:root .bag-list li > span:first-child {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+:root .bag-list li > span:nth-child(2) {
+  color: #fff;
+  font-weight: 700;
+}
+
+:root .bag-list small {
+  color: var(--text-dim);
+  font-weight: 400;
+}
+
+:root .rarity-badge {
+  background: rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+:root .rarity-R .rarity-badge {
+  background: rgba(25, 227, 240, 0.2);
+  color: var(--neon-cyan);
+}
+
+:root .rarity-SR .rarity-badge {
+  background: linear-gradient(90deg, #ffd66b, #ff9fb2);
+  color: #4a2500;
+}
+
+/* Map header */
+:root .brand-mark {
+  background: linear-gradient(135deg, var(--neon-pink), #7b3df5);
+  color: #fff;
+  box-shadow: 0 0 14px rgba(255, 61, 139, 0.5);
+}
+
+:root .exit-button {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+:root .map-wrap {
+  background: transparent;
+}
+
+/* Teacher art (BossDef.image / BossDef.card) */
+.battle-sprite {
+  height: clamp(220px, 46vh, 380px);
+  width: auto;
+  pointer-events: none;
+}
+
+.dex-thumb {
+  display: block;
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  object-position: center 15%;
+  border-radius: 50%;
+}
+
+.dex-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.dex-card img {
+  display: block;
+  width: 100%;
+  max-width: 320px;
+  max-height: 60vh;
+  object-fit: contain;
+  border-radius: 12px;
+}
+
+.dex-card small {
+  color: var(--neon-cyan, #4a70f5);
+  font-weight: 700;
+}
+
+/* 図鑑 tiles (home.tsx DexTab). --h = teacher hue from BossDef.hue */
+.dex-tiles {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.dex-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.dex-tile:disabled {
+  cursor: default;
+}
+
+.dex-tile-art {
+  position: relative;
+  display: block;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 10px;
+  border: 2px solid #e9c46a;
+  background:
+    radial-gradient(circle at 50% 38%, hsla(calc(var(--h) + 40), 100%, 82%, 0.95), transparent 55%),
+    conic-gradient(from 200deg at 50% 60%, hsl(var(--h), 85%, 55%), hsl(calc(var(--h) + 60), 85%, 60%),
+      hsl(calc(var(--h) + 140), 80%, 60%), hsl(calc(var(--h) - 60), 85%, 58%), hsl(var(--h), 85%, 55%));
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4) inset, 0 3px 8px rgba(0, 0, 0, 0.35);
+  transition: transform 0.15s;
+}
+
+.dex-tile.caught:active .dex-tile-art {
+  transform: scale(0.94);
+}
+
+.dex-tile.caught .dex-tile-art {
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4) inset, 0 0 10px hsla(var(--h), 100%, 65%, 0.7);
+}
+
+.dex-tile-art img {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 108%;
+  height: 108%;
+  transform: translateX(-50%);
+  object-fit: cover;
+  object-position: center 10%;
+  filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.8));
+}
+
+.dex-tile-no {
+  position: absolute;
+  z-index: 1;
+  top: 3px;
+  left: 4px;
+  padding: 0 4px;
+  border-radius: 6px;
+  background: rgba(10, 8, 30, 0.6);
+  color: #ffeab0;
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.dex-tile-glyph {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 1.8rem;
+  font-weight: 900;
+}
+
+/* met but not beaten: a black silhouette on a muted tile */
+.dex-tile.seen .dex-tile-art {
+  filter: saturate(0.35) brightness(0.75);
+}
+
+.dex-tile.seen .dex-tile-art img {
+  filter: brightness(0) drop-shadow(0 0 2px rgba(255, 255, 255, 0.6));
+}
+
+/* never met: dark, dashed */
+.dex-tile.unknown .dex-tile-art {
+  border: 2px dashed rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: none;
+}
+
+.dex-tile-stars {
+  color: #ffd34d;
+  font-size: 0.62rem;
+  letter-spacing: 1px;
+  text-align: center;
+  text-shadow: 0 0 4px rgba(255, 200, 60, 0.6);
+}
+
+.dex-tile:not(.caught) .dex-tile-stars {
+  color: rgba(255, 255, 255, 0.3);
+  text-shadow: none;
+}
+
+/* the card pops in when a tile is tapped */
+.dex-card img {
+  animation: dex-card-in 0.45s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+
+@keyframes dex-card-in {
+  from {
+    opacity: 0;
+    transform: scale(0.6) rotateY(80deg);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dex-card img {
+    animation: none;
+  }
 }

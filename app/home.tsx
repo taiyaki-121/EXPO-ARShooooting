@@ -1,31 +1,27 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import {
   BASE_STATS,
   BOSSES,
   BossDef,
   EQUIP_SLOTS,
+  GEAR,
   ITEMS,
-  MAX_TEACHER_LEVEL,
+  MAX_SKILL_LEVEL,
   Progress,
   STAGE_EVENT_HOUR,
   STAGE_EVENT_MINUTE,
   STAT_LABELS,
   Stats,
-  TEACHERS,
   TITLES,
-  levelUpCost,
+  skillLevel,
   titleName,
+  winsToNextLevel,
 } from "./game-data";
-import {
-  canLevelUp,
-  collectionRate,
-  finisherMultiplier,
-  levelUpTeacher,
-  toggleEquip,
-} from "./progress";
+import { collectionRate, equipGear, finisherMultiplier, toggleEquip } from "./progress";
 import { playfabEnabled } from "./playfab";
+import { boostText } from "./starter-gear";
 
 type MenuTab = "dex" | "bag" | "titles" | "ranking";
 
@@ -40,22 +36,22 @@ const TUTORIAL_STEPS = [
   {
     emoji: "🔑",
     title: "合言葉を見つけよう",
-    body: "会場のあちこちに合言葉がかくれています。ホームの真ん中の「合言葉」から入力すると、小ボスが現れたり先生が仲間になったりします。",
+    body: "会場のあちこちに先生がかくれています。そばの合言葉をホームの真ん中の「合言葉」から入力すると、先生とバトル！",
   },
   {
     emoji: "🗺️",
-    title: "マップで小ボスを探そう",
-    body: "「マップ」で小ボスのいる場所をチェック。近くで合言葉を見つけたら入力してバトル！攻撃ボタンで攻撃、回避ボタンで敵の攻撃をかわします。",
+    title: "マップで先生を探そう",
+    body: "「マップ」で先生のいる場所をチェック。攻撃ボタンで攻撃、回避ボタンで敵の攻撃をかわします。",
   },
   {
-    emoji: "🎒",
-    title: "集めて強くなろう",
-    body: "小ボスを倒すとゴールドとアイテムが手に入ります。レアアイテムも落とすかも！図鑑や称号も集めましょう。",
+    emoji: "🎁",
+    title: "初クリアで装備ゲット",
+    body: "はじめて先生を倒すと、3つの中から好きな装備をひとつもらえます。どれを選んでも強いよ！",
   },
   {
-    emoji: "🧑‍🏫",
-    title: "先生を装備しよう",
-    body: `先生は全部で${TEACHERS.length}人。仲間になった先生は「装備」から最大${EQUIP_SLOTS}人まで装備でき、ステータスが上がります。ゴールドで強化もできます。`,
+    emoji: "✨",
+    title: "先生を倒してスキルゲット",
+    body: `先生は全部で${BOSSES.length}人。倒すとその先生のスキルが手に入り、何度も倒すとスキルレベルが上がります（最大Lv.${MAX_SKILL_LEVEL}）。スキルは「装備」から${EQUIP_SLOTS}つまでセットできます。`,
   },
   {
     emoji: "🎤",
@@ -79,7 +75,7 @@ export default function Home({ progress, stats, update, onMap, onScan, onSignOut
   const [showTutorial, setShowTutorial] = useState(!progress.tutorialDone);
   const rate = collectionRate(progress);
   const activeTitle = TITLES.find((t) => t.id === progress.activeTitle);
-  const remaining = TEACHERS.filter((t) => !progress.teachers[t.id]).length;
+  const remaining = BOSSES.filter((t) => !progress.defeated[t.id]).length;
 
   function closeTutorial() {
     setShowTutorial(false);
@@ -117,10 +113,10 @@ export default function Home({ progress, stats, update, onMap, onScan, onSignOut
         <Countdown />
 
         <section className="teacher-board">
-          <h2>先生をあつめよう</h2>
+          <h2>先生をたおそう</h2>
           <div className="teacher-grid">
-            {TEACHERS.map((t) => {
-              const level = progress.teachers[t.id];
+            {BOSSES.map((t) => {
+              const level = skillLevel(progress.defeated[t.id] ?? 0);
               const equipped = progress.equipped.includes(t.id);
               return (
                 <button
@@ -128,7 +124,7 @@ export default function Home({ progress, stats, update, onMap, onScan, onSignOut
                   className={`teacher-slot ${level ? "got" : ""} ${equipped ? "equipped" : ""}`}
                   onClick={() => setSheet("equip")}
                   disabled={!level}
-                  aria-label={level ? `${t.name} Lv.${level}` : "まだ仲間になっていない先生"}
+                  aria-label={level ? `${t.name} スキルLv.${level}` : "まだ倒していない先生"}
                 >
                   <span className="teacher-slot-face" aria-hidden="true">
                     {level ? t.emoji : "？"}
@@ -312,38 +308,82 @@ function StatusTab({
         ))}
       </dl>
 
+      <h3>装備品</h3>
+      <ul className="teacher-list">
+        {GEAR.map((g) => {
+          const tier = progress.gear[g.id];
+          if (!tier) {
+            return (
+              <li key={g.id} className="teacher locked">
+                <span className="teacher-emoji" aria-hidden="true">？</span>
+                <div>
+                  <strong>？？？</strong>
+                  <span>先生を倒すと手に入るかも</span>
+                </div>
+              </li>
+            );
+          }
+          const equipped = progress.equippedGear === g.id;
+          return (
+            <li key={g.id} className={`teacher ${equipped ? "equipped" : ""}`}>
+              <span className="teacher-emoji" aria-hidden="true">{g.emoji}</span>
+              <div>
+                <strong>
+                  {g.name} {tier === "lite" && <small>ライト版</small>}
+                </strong>
+                <span className="teacher-cost">{boostText(g.boost[tier])}</span>
+              </div>
+              <div className="teacher-buttons">
+                <button
+                  className={`btn small ${equipped ? "" : "primary"}`}
+                  onClick={() => update(equipGear(g.id))}
+                >
+                  {equipped ? "外す" : "装備"}
+                </button>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+
       <h3>
-        先生（装備 {progress.equipped.length}/{EQUIP_SLOTS}）
+        スキル（セット {progress.equipped.length}/{EQUIP_SLOTS}）
       </h3>
       <ul className="teacher-list">
-        {TEACHERS.map((t) => {
-          const level = progress.teachers[t.id];
+        {BOSSES.map((t) => {
+          const wins = progress.defeated[t.id] ?? 0;
+          const level = skillLevel(wins);
           if (!level) {
             return (
               <li key={t.id} className="teacher locked">
                 <span className="teacher-emoji" aria-hidden="true">？</span>
                 <div>
-                  <strong>？？？の先生</strong>
-                  <span>会場の合言葉で仲間にしよう</span>
+                  <strong>？？？</strong>
+                  <span>先生を倒すと手に入る</span>
                 </div>
               </li>
             );
           }
           const equipped = progress.equipped.includes(t.id);
-          const cost = levelUpCost(level);
+          const toNext = winsToNextLevel(wins);
           return (
             <li key={t.id} className={`teacher ${equipped ? "equipped" : ""}`}>
               <span className="teacher-emoji" aria-hidden="true">{t.emoji}</span>
               <div>
                 <strong>
-                  {t.name} <small>Lv.{level}</small>
+                  {t.skill.name} <small>Lv.{level}{level >= MAX_SKILL_LEVEL ? " MAX" : ""}</small>
                 </strong>
-                <span>{t.description}</span>
-                {level < MAX_TEACHER_LEVEL && (
-                  <span className="teacher-cost">
-                    強化：💰{cost.gold}
-                  </span>
-                )}
+                <span>
+                  {t.name}：{t.skill.description}
+                </span>
+                <span className="teacher-cost">
+                  {boostText(
+                    Object.fromEntries(
+                      Object.entries(t.skill.boostPerLevel).map(([k, v]) => [k, (v ?? 0) * level])
+                    )
+                  )}
+                  {toNext !== null && `（あと${toNext}回でLv.${level + 1}）`}
+                </span>
               </div>
               <div className="teacher-buttons">
                 <button
@@ -351,14 +391,7 @@ function StatusTab({
                   onClick={() => update(toggleEquip(t.id))}
                   disabled={!equipped && progress.equipped.length >= EQUIP_SLOTS}
                 >
-                  {equipped ? "外す" : "装備"}
-                </button>
-                <button
-                  className="btn small"
-                  onClick={() => update(levelUpTeacher(t.id))}
-                  disabled={!canLevelUp(progress, t.id)}
-                >
-                  {level >= MAX_TEACHER_LEVEL ? "MAX" : "強化"}
+                  {equipped ? "外す" : "セット"}
                 </button>
               </div>
             </li>
@@ -385,25 +418,39 @@ function DexTab({ progress }: { progress: Progress }) {
   return (
     <>
       <h3>
-        小ボス図鑑 {found}/{BOSSES.length}
+        先生図鑑 {found}/{BOSSES.length}
       </h3>
-      <div className="dex-grid">
+      {/* Tile grid: tap a defeated teacher to open their card. Met-but-unbeaten teachers
+          show as a silhouette; unmet ones as "?". Stars = skill level. */}
+      <div className="dex-tiles">
         {BOSSES.map((b, i) => {
           const wins = progress.defeated[b.id] ?? 0;
           const seen = progress.seen.includes(b.id);
+          const level = skillLevel(wins);
+          const state = wins ? "caught" : seen ? "seen" : "unknown";
           return (
             <button
               key={b.id}
-              className={`dex-cell ${wins ? "caught" : seen ? "seen" : ""}`}
+              className={`dex-tile ${state}`}
+              style={{ "--h": b.hue ?? 230 } as CSSProperties}
               onClick={() => wins && setOpen(b)}
               disabled={!wins}
+              aria-label={wins ? `${b.name}のカードを見る` : seen ? "まだ倒していない先生" : "まだ会っていない先生"}
             >
-              <span className="dex-no">No.{String(i + 1).padStart(2, "0")}</span>
-              <span className="dex-emoji" aria-hidden="true">
-                {wins ? b.emoji : seen ? "❔" : "？"}
+              <span className="dex-tile-art">
+                <span className="dex-tile-no">{String(i + 1).padStart(3, "0")}</span>
+                {state !== "unknown" && b.image ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={b.image} alt="" draggable={false} />
+                ) : (
+                  <span className="dex-tile-glyph" aria-hidden="true">
+                    {state === "unknown" ? "？" : b.emoji}
+                  </span>
+                )}
               </span>
-              <span className="dex-name">{seen ? b.name : "？？？"}</span>
-              {wins > 0 && <span className="dex-wins">撃破 {wins}</span>}
+              <span className="dex-tile-stars" aria-hidden="true">
+                {Array.from({ length: MAX_SKILL_LEVEL }, (_, k) => (k < level ? "★" : "☆")).join("")}
+              </span>
             </button>
           );
         })}
@@ -412,13 +459,22 @@ function DexTab({ progress }: { progress: Progress }) {
       {open && (
         <div className="modal-backdrop" onClick={() => setOpen(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <button className="dex-portrait" onClick={() => speak(open.voice)}>
-              <span aria-hidden="true">{open.emoji}</span>
-              <small>タッチでボイス 🔊</small>
-            </button>
-            <h3>{open.name}</h3>
+            {open.card ? (
+              <button className="dex-card" onClick={() => speak(open.voice)}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={open.card} alt={`${open.name}の図鑑カード`} />
+                <small>タッチでボイス 🔊</small>
+              </button>
+            ) : (
+              <button className="dex-portrait" onClick={() => speak(open.voice)}>
+                <span aria-hidden="true">{open.emoji}</span>
+                <small>タッチでボイス 🔊</small>
+              </button>
+            )}
+            {/* The card already shows the name and 生態メモ */}
+            {!open.card && <h3>{open.name}</h3>}
             <p className="dex-voice">「{open.voice}」</p>
-            <p>{open.description}</p>
+            {!open.card && <p>{open.description}</p>}
             <dl className="stat-list">
               <div>
                 <dt>HP</dt>
@@ -427,6 +483,12 @@ function DexTab({ progress }: { progress: Progress }) {
               <div>
                 <dt>撃破数</dt>
                 <dd>{progress.defeated[open.id]}</dd>
+              </div>
+              <div>
+                <dt>スキル</dt>
+                <dd>
+                  {open.skill.name} Lv.{skillLevel(progress.defeated[open.id] ?? 0)}
+                </dd>
               </div>
             </dl>
             <button className="btn primary" onClick={() => setOpen(null)}>

@@ -6,13 +6,14 @@ import {
   BOSSES,
   BossDef,
   EQUIP_SLOTS,
+  GEAR,
+  GEAR_DROP_CHANCE,
   ITEMS,
-  MAX_TEACHER_LEVEL,
   Progress,
   Stats,
-  TEACHERS,
   TITLES,
-  levelUpCost,
+  needsStarterGear,
+  skillLevel,
 } from "./game-data";
 import { PlayFabError, login, playfabEnabled, saveProgress } from "./playfab";
 
@@ -28,8 +29,9 @@ export function newProgress(nickname: string): Progress {
     items: {},
     seen: [],
     defeated: {},
-    teachers: {},
     equipped: [],
+    gear: {},
+    equippedGear: null,
     titles: [],
     activeTitle: null,
     tutorialDone: false,
@@ -147,16 +149,21 @@ export function useProgress() {
   };
 }
 
+function addBoost(stats: Stats, boost: Partial<Stats>, times = 1) {
+  for (const [key, value] of Object.entries(boost)) {
+    stats[key as keyof Stats] += (value ?? 0) * times;
+  }
+}
+
 export function computeStats(p: Progress): Stats {
   const stats = { ...BASE_STATS };
   for (const id of p.equipped) {
-    const teacher = TEACHERS.find((t) => t.id === id);
-    const level = p.teachers[id] ?? 0;
-    if (!teacher) continue;
-    for (const [key, value] of Object.entries(teacher.boostPerLevel)) {
-      stats[key as keyof Stats] += (value ?? 0) * level;
-    }
+    const boss = BOSSES.find((b) => b.id === id);
+    if (boss) addBoost(stats, boss.skill.boostPerLevel, skillLevel(p.defeated[id] ?? 0));
   }
+  const gear = GEAR.find((g) => g.id === p.equippedGear);
+  const tier = gear && p.gear[gear.id];
+  if (gear && tier) addBoost(stats, gear.boost[tier]);
   stats.dodgeCooldownMs = Math.max(1000, stats.dodgeCooldownMs);
   return stats;
 }
@@ -166,9 +173,9 @@ export function collectionRate(p: Progress) {
   const owned =
     BOSSES.filter((b) => p.defeated[b.id]).length +
     ITEMS.filter((i) => p.items[i.id]).length +
-    TEACHERS.filter((t) => p.teachers[t.id]).length +
+    GEAR.filter((g) => p.gear[g.id]).length +
     TITLES.filter((t) => p.titles.includes(t.id)).length;
-  const total = BOSSES.length + ITEMS.length + TEACHERS.length + TITLES.length;
+  const total = BOSSES.length + ITEMS.length + GEAR.length + TITLES.length;
   return owned / total;
 }
 
@@ -179,16 +186,23 @@ export function finisherMultiplier(p: Progress) {
 export type Drops = {
   gold: number;
   items: string[];
+  gear: string | null; // a lite piece, only after the starter pick
 };
 
-export function rollDrops(boss: BossDef, stats: Stats): Drops {
+export function rollDrops(boss: BossDef, stats: Stats, p: Progress): Drops {
   const [min, max] = boss.gold;
   const baseGold = min + Math.floor(Math.random() * (max - min + 1));
+  const missingGear = GEAR.filter((g) => !p.gear[g.id]);
+  const canDropGear = Object.keys(p.gear).length > 0 && missingGear.length > 0;
   return {
     gold: Math.round(baseGold * (1 + stats.goldBonus / 100)),
     items: boss.drops
       .filter((d) => Math.random() < d.chance * (1 + stats.rareBonus / 100))
       .map((d) => d.itemId),
+    gear:
+      canDropGear && Math.random() < GEAR_DROP_CHANCE
+        ? missingGear[Math.floor(Math.random() * missingGear.length)].id
+        : null,
   };
 }
 
@@ -196,11 +210,19 @@ export function applyWin(boss: BossDef, drops: Drops) {
   return (p: Progress): Progress => {
     const items = { ...p.items };
     for (const id of drops.items) items[id] = (items[id] ?? 0) + 1;
+    const firstWin = !p.defeated[boss.id];
+    // A newly earned skill goes straight into a free slot
+    const equipped =
+      firstWin && p.equipped.length < EQUIP_SLOTS && !p.equipped.includes(boss.id)
+        ? [...p.equipped, boss.id]
+        : p.equipped;
     return {
       ...p,
       score: p.score + boss.hp * 10,
       gold: p.gold + drops.gold,
       items,
+      gear: drops.gear && !p.gear[drops.gear] ? { ...p.gear, [drops.gear]: "lite" } : p.gear,
+      equipped,
       seen: p.seen.includes(boss.id) ? p.seen : [...p.seen, boss.id],
       defeated: { ...p.defeated, [boss.id]: (p.defeated[boss.id] ?? 0) + 1 },
     };
@@ -212,43 +234,26 @@ export function markSeen(bossId: string) {
     p.seen.includes(bossId) ? p : { ...p, seen: [...p.seen, bossId] };
 }
 
-export function recruitTeacher(teacherId: string) {
+export function chooseStarterGear(gearId: string) {
+  return (p: Progress): Progress =>
+    needsStarterGear(p) && GEAR.some((g) => g.id === gearId)
+      ? { ...p, gear: { [gearId]: "full" }, equippedGear: gearId }
+      : p;
+}
+
+export function equipGear(gearId: string) {
   return (p: Progress): Progress => {
-    if (p.teachers[teacherId]) return p;
-    const equipped =
-      p.equipped.length < EQUIP_SLOTS ? [...p.equipped, teacherId] : p.equipped;
-    return { ...p, teachers: { ...p.teachers, [teacherId]: 1 }, equipped };
+    if (p.equippedGear === gearId) return { ...p, equippedGear: null };
+    return p.gear[gearId] ? { ...p, equippedGear: gearId } : p;
   };
 }
 
-export function toggleEquip(teacherId: string) {
+export function toggleEquip(skillId: string) {
   return (p: Progress): Progress => {
-    if (p.equipped.includes(teacherId)) {
-      return { ...p, equipped: p.equipped.filter((id) => id !== teacherId) };
+    if (p.equipped.includes(skillId)) {
+      return { ...p, equipped: p.equipped.filter((id) => id !== skillId) };
     }
-    if (!p.teachers[teacherId] || p.equipped.length >= EQUIP_SLOTS) return p;
-    return { ...p, equipped: [...p.equipped, teacherId] };
-  };
-}
-
-export function canLevelUp(p: Progress, teacherId: string) {
-  const teacher = TEACHERS.find((t) => t.id === teacherId);
-  const level = p.teachers[teacherId] ?? 0;
-  if (!teacher || level === 0 || level >= MAX_TEACHER_LEVEL) return false;
-  const cost = levelUpCost(level);
-  return p.gold >= cost.gold;
-}
-
-export function levelUpTeacher(teacherId: string) {
-  return (p: Progress): Progress => {
-    if (!canLevelUp(p, teacherId)) return p;
-    const teacher = TEACHERS.find((t) => t.id === teacherId)!;
-    const level = p.teachers[teacherId];
-    const cost = levelUpCost(level);
-    return {
-      ...p,
-      gold: p.gold - cost.gold,
-      teachers: { ...p.teachers, [teacherId]: level + 1 },
-    };
+    if (!p.defeated[skillId] || p.equipped.length >= EQUIP_SLOTS) return p;
+    return { ...p, equipped: [...p.equipped, skillId] };
   };
 }
