@@ -1,15 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { Stats } from "./game-data";
+import { PLAYER_MAX_HP, type Stats } from "./game-data";
 
 const PLAYER_ATTACK_COOLDOWN_MS = 600;
-const ENEMY_ATTACK_DAMAGE = 10;
 const ENEMY_ATTACK_INTERVAL_MS = 1200;
 const DODGE_DURATION_MS = 900;
 
-export function useBattle(monsterMaxHp: number, stats: Stats) {
-  const playerMaxHp = stats.maxHp;
+// Enemy hits take a share of the player's max HP, so a fresh player and a
+// fully equipped one survive the same number of hits.
+export function useBattle(monsterMaxHp: number, stats: Stats, attackPercent: number) {
+  const playerMaxHp = PLAYER_MAX_HP;
+  const enemyDamage = Math.max(1, Math.ceil((playerMaxHp * attackPercent) / 100));
   const [playerHp, setPlayerHp] = useState(playerMaxHp);
   const [monsterHp, setMonsterHp] = useState(monsterMaxHp);
   const [clock, setClock] = useState(0);
@@ -27,14 +29,14 @@ export function useBattle(monsterMaxHp: number, stats: Stats) {
     const clockTimer = window.setInterval(() => setClock(Date.now()), 100);
     const attackTimer = window.setInterval(() => {
       if (dodgeUntil.current > Date.now()) return;
-      setPlayerHp((hp) => Math.max(0, hp - ENEMY_ATTACK_DAMAGE));
+      setPlayerHp((hp) => Math.max(0, hp - enemyDamage));
     }, ENEMY_ATTACK_INTERVAL_MS);
 
     return () => {
       window.clearInterval(clockTimer);
       window.clearInterval(attackTimer);
     };
-  }, [battleFinished]);
+  }, [battleFinished, enemyDamage]);
 
   function attack() {
     const now = Date.now();

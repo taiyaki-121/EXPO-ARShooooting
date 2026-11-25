@@ -1,33 +1,45 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { BossDef, ITEMS, Stats } from "./game-data";
+import {
+  BossDef,
+  GEAR,
+  ITEMS,
+  MAX_SKILL_LEVEL,
+  Progress,
+  Stats,
+  skillLevel,
+} from "./game-data";
 import { Drops, rollDrops } from "./progress";
+import TeacherModel from "./teacher-model";
 import { useBattle } from "./use-battle";
 
 export default function Battle({
   monster,
-  nickname,
-  score,
+  progress,
   stats,
   onFinish,
 }: {
   monster: BossDef;
-  nickname: string;
-  score: number;
+  progress: Progress;
   stats: Stats;
   onFinish: (drops: Drops | null) => void;
 }) {
+  const { nickname, score } = progress;
   const videoRef = useRef<HTMLVideoElement>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [drops, setDrops] = useState<Drops | null>(null);
-  const battle = useBattle(monster.hp, stats);
+  const battle = useBattle(monster.hp, stats, monster.attackPercent);
   const won = battle.status === "won";
   const reward = monster.hp * 10;
+  // progress only updates after もどる, so these describe the state before this win
+  const winsBefore = progress.defeated[monster.id] ?? 0;
+  const levelBefore = skillLevel(winsBefore);
+  const levelAfter = skillLevel(winsBefore + 1);
 
   useEffect(() => {
-    if (won) setDrops((d) => d ?? rollDrops(monster, stats));
-  }, [won, monster, stats]);
+    if (won) setDrops((d) => d ?? rollDrops(monster, stats, progress));
+  }, [won, monster, stats, progress]);
 
   useEffect(() => {
     let stream: MediaStream | null = null;
@@ -121,9 +133,7 @@ export default function Battle({
         </div>
       </div>
 
-      <div className={`battle-monster ${battle.dodging ? "dodging" : ""}`}>
-        {monster.emoji}
-      </div>
+      <TeacherModel boss={monster} dodging={battle.dodging} />
 
       <div className="battle-message">{battle.message}</div>
 
@@ -154,6 +164,23 @@ export default function Battle({
           </p>
           {won && drops && (
             <ul className="drop-list">
+              {levelAfter > levelBefore && (
+                <li className="rarity-SR">
+                  <span aria-hidden="true">✨</span>
+                  {levelBefore === 0
+                    ? `スキル「${monster.skill.name}」をゲット！`
+                    : `「${monster.skill.name}」が Lv.${levelAfter}${levelAfter >= MAX_SKILL_LEVEL ? "（MAX）" : ""} に上がった！`}
+                </li>
+              )}
+              {drops.gear && (() => {
+                const gear = GEAR.find((g) => g.id === drops.gear)!;
+                return (
+                  <li className="rarity-R">
+                    <span aria-hidden="true">{gear.emoji}</span> {gear.name}（ライト版）
+                    <span className="rarity-badge">装備</span>
+                  </li>
+                );
+              })()}
               <li>
                 <span aria-hidden="true">💰</span> {drops.gold} G
               </li>

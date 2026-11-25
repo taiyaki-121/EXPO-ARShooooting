@@ -12,12 +12,15 @@ type Monster = BossDef & { position: LatLng };
 // Tokyo Station area (fallback when GPS is unavailable)
 const DEMO_POSITION: LatLng = [35.681236, 139.767125];
 
-// Map offsets for each boss around the player
+// Map offsets for each teacher around the player (placeholder until venue spots are fixed)
 const BOSS_OFFSETS: Record<string, [number, number]> = {
-  slime: [0.0007, 0.0004],
-  dragon: [-0.0006, 0.0008],
-  ghost: [0.0003, -0.0009],
-  robot: [-0.0008, -0.0005],
+  suzuki: [0.0007, 0.0004],
+  osawa: [-0.0006, 0.0008],
+  yagi: [0.0003, -0.0009],
+  ohashi: [-0.0008, -0.0005],
+  shibata: [0.0009, -0.0002],
+  futamura: [-0.0002, 0.001],
+  kano: [0.0005, 0.0009],
 };
 
 // label is our own data (boss names), never user input, so it is safe to inline as HTML
@@ -109,12 +112,14 @@ export default function Explore({ progress, onCodeword, onHome }: Props) {
       <div className="map-wrap">
         <div className="map-hint">
           <span aria-hidden="true">📍</span>
-          合言葉を見つけて小ボスと戦おう
+          合言葉を見つけて先生と戦おう
         </div>
         <MapContainer center={position} zoom={17} scrollWheelZoom className="map">
+          {/* OpenStreetMap's own tiles: CARTO basemaps now return "API KEY REQUIRED" tiles without a key */}
           <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-            url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+            maxZoom={19}
           />
           <Recenter position={position} />
           <Marker position={position} icon={playerIcon}>
@@ -148,9 +153,9 @@ export default function Explore({ progress, onCodeword, onHome }: Props) {
         <div className="map-stat monster-stat">
           <span className="stat-icon monster-icon" aria-hidden="true">👾</span>
           <div>
-            <span className="stat-label">たおした小ボス</span>
+            <span className="stat-label">たおした先生</span>
             <strong>
-              {defeatedCount} <small>/ {BOSSES.length} 体</small>
+              {defeatedCount} <small>/ {BOSSES.length} 人</small>
             </strong>
           </div>
         </div>

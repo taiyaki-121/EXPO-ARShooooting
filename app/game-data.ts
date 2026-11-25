@@ -1,8 +1,10 @@
 export type Rarity = "N" | "R" | "SR";
 
+// Player HP is fixed: enemy hits take a % of it (BossDef.attackPercent), so HP isn't a stat.
+export const PLAYER_MAX_HP = 100;
+
 export type Stats = {
   attack: number;
-  maxHp: number;
   dodgeCooldownMs: number;
   goldBonus: number; // percent
   rareBonus: number; // percent, multiplies item drop chances
@@ -10,7 +12,6 @@ export type Stats = {
 
 export const BASE_STATS: Stats = {
   attack: 10,
-  maxHp: 100,
   dodgeCooldownMs: 3500,
   goldBonus: 0,
   rareBonus: 0,
@@ -18,7 +19,6 @@ export const BASE_STATS: Stats = {
 
 export const STAT_LABELS: Record<keyof Stats, string> = {
   attack: "攻撃力",
-  maxHp: "最大HP",
   dodgeCooldownMs: "回避クールタイム",
   goldBonus: "ゴールドボーナス",
   rareBonus: "レアドロップ率",
@@ -32,184 +32,197 @@ export type ItemDef = {
   description: string;
 };
 
+// Placeholder items: one per teacher plus a few shared ones. Rename freely.
 export const ITEMS: ItemDef[] = [
-  { id: "candy", name: "ふしぎなアメ", emoji: "🍬", rarity: "N", description: "甘くてちょっと元気が出る。" },
+  { id: "candy", name: "ふしぎなアメ", emoji: "🍬", rarity: "N", description: "どの先生もポケットに入れている。" },
   { id: "badge", name: "探検家バッジ", emoji: "📛", rarity: "N", description: "会場を歩き回った証。" },
-  { id: "crystal", name: "スライム結晶", emoji: "💎", rarity: "R", description: "スライムの中心で光っていた結晶。" },
-  { id: "flame", name: "竜の炎玉", emoji: "🔥", rarity: "R", description: "触るとほんのり温かい。" },
-  { id: "lantern", name: "幽霊ランタン", emoji: "🏮", rarity: "R", description: "青白い光がゆらめく。" },
-  { id: "chip", name: "黄金チップ", emoji: "🪙", rarity: "SR", description: "ロボットの頭脳。めったに手に入らない。" },
-  { id: "crown", name: "ボスの王冠", emoji: "👑", rarity: "SR", description: "選ばれし探検家だけが手にする。" },
+  { id: "whistle", name: "ホイッスル", emoji: "📯", rarity: "R", description: "ピッと鳴らすと背筋がのびる。" },
+  { id: "flask", name: "フラスコ", emoji: "⚗️", rarity: "R", description: "中身は秘密の実験液。" },
+  { id: "compass", name: "コンパス", emoji: "🧭", rarity: "R", description: "きれいな円が描ける。" },
+  { id: "apron", name: "エプロン", emoji: "🧺", rarity: "R", description: "ほんのりカレーのにおいがする。" },
+  { id: "brush", name: "書道の筆", emoji: "🖌️", rarity: "R", description: "とめ・はね・はらい。" },
+  { id: "passport", name: "パスポート", emoji: "🛂", rarity: "R", description: "どこへでも行けそうな気がする。" },
+  { id: "wrench", name: "星空の写真", emoji: "🌌", rarity: "R", description: "狩野先生がドライブ先で撮った一枚。" },
+  { id: "crown", name: "教頭の王冠", emoji: "👑", rarity: "SR", description: "選ばれし探検家だけが手にする。" },
 ];
 
 export type BossDef = {
   id: string;
   name: string;
   emoji: string;
+  subject: string;
   hp: number;
+  attackPercent: number; // each enemy hit takes this % of the player's max HP
   gold: [number, number];
   drops: { itemId: string; chance: number }[];
   description: string;
   voice: string;
+  skill: { name: string; description: string; boostPerLevel: Partial<Stats> };
+  // Optional art in public/: a transparent sprite shown in battle (used when there's no
+  // 3D model) and a finished 図鑑 card shown in the 図鑑 detail view.
+  image?: string;
+  card?: string;
 };
 
+const drops = (itemId: string) => [
+  { itemId: "candy", chance: 0.4 },
+  { itemId, chance: 0.2 },
+  { itemId: "crown", chance: 0.02 },
+];
+
+// The mini-bosses are the teachers, fought via the venue 合言葉. Beating one earns its
+// skill; beating it again raises the skill level (SKILL_LEVEL_WINS). Placeholder values.
 export const BOSSES: BossDef[] = [
   {
-    id: "slime",
-    name: "スライム",
-    emoji: "👾",
+    id: "suzuki",
+    name: "鈴木先生",
+    emoji: "🧑‍🏫",
+    subject: "鈴木",
     hp: 50,
-    gold: [20, 40],
-    drops: [
-      { itemId: "candy", chance: 0.5 },
-      { itemId: "crystal", chance: 0.15 },
-      { itemId: "crown", chance: 0.02 },
-    ],
-    description: "会場の入口付近によく出る。弱いが数が多い。",
-    voice: "ぷるぷる…ぼく、わるいスライムじゃないよ！",
-  },
-  {
-    id: "dragon",
-    name: "ドラゴン",
-    emoji: "🐉",
-    hp: 80,
-    gold: [50, 80],
-    drops: [
-      { itemId: "badge", chance: 0.4 },
-      { itemId: "flame", chance: 0.15 },
-      { itemId: "crown", chance: 0.03 },
-    ],
-    description: "ステージ裏にひそむ。攻撃力が高い。",
-    voice: "我が炎、受けてみよ！",
-  },
-  {
-    id: "ghost",
-    name: "ゴースト",
-    emoji: "👻",
-    hp: 60,
+    attackPercent: 8,
     gold: [30, 50],
-    drops: [
-      { itemId: "candy", chance: 0.4 },
-      { itemId: "lantern", chance: 0.15 },
-    ],
-    description: "暗い展示ブースに現れる。すぐに姿を消す。",
-    voice: "うらめしや〜…なんてね。",
+    drops: drops("brush"),
+    description: "（紹介文を入れてください）",
+    voice: "（セリフを入れてください）",
+    skill: { name: "言霊", description: "攻撃力が上がる", boostPerLevel: { attack: 2 } },
   },
   {
-    id: "robot",
-    name: "ロボット",
-    emoji: "🤖",
+    id: "osawa",
+    name: "大澤先生",
+    emoji: "👨‍🏫",
+    subject: "大澤",
+    hp: 60,
+    attackPercent: 10,
+    gold: [30, 50],
+    drops: drops("whistle"),
+    description: "（紹介文を入れてください）",
+    voice: "（セリフを入れてください）",
+    skill: { name: "全力ダッシュ", description: "回避が速くなる", boostPerLevel: { dodgeCooldownMs: -250 } },
+  },
+  {
+    id: "yagi",
+    name: "八木先生",
+    emoji: "🧔",
+    subject: "八木",
+    hp: 90,
+    attackPercent: 14,
+    gold: [60, 90],
+    drops: drops("flask"),
+    description: "（紹介文を入れてください）",
+    voice: "（セリフを入れてください）",
+    skill: { name: "弱点分析", description: "攻撃力が上がる", boostPerLevel: { attack: 3 } },
+  },
+  {
+    id: "ohashi",
+    name: "大橋先生",
+    emoji: "👩‍🏫",
+    subject: "大橋",
+    hp: 50,
+    attackPercent: 9,
+    gold: [30, 50],
+    drops: drops("apron"),
+    description: "（紹介文を入れてください）",
+    voice: "（セリフを入れてください）",
+    skill: { name: "やりくり上手", description: "ゴールドとレア率が上がる", boostPerLevel: { goldBonus: 10, rareBonus: 10 } },
+  },
+  {
+    id: "shibata",
+    name: "柴田先生",
+    emoji: "🧑‍🔬",
+    subject: "柴田",
     hp: 70,
+    attackPercent: 12,
     gold: [40, 60],
-    drops: [
-      { itemId: "badge", chance: 0.4 },
-      { itemId: "chip", chance: 0.05 },
-    ],
-    description: "研究展示のそばを巡回している。",
-    voice: "ピピッ。シンニュウシャ、ハッケン。",
+    drops: drops("compass"),
+    description: "（紹介文を入れてください）",
+    voice: "（セリフを入れてください）",
+    skill: { name: "最適解", description: "回避が速くなる", boostPerLevel: { dodgeCooldownMs: -300 } },
+  },
+  {
+    id: "futamura",
+    name: "二村先生",
+    emoji: "🧑‍💻",
+    subject: "二村",
+    hp: 60,
+    attackPercent: 10,
+    gold: [30, 50],
+    drops: drops("passport"),
+    description: "（紹介文を入れてください）",
+    voice: "（セリフを入れてください）",
+    skill: { name: "グローバル", description: "レア率が上がる", boostPerLevel: { rareBonus: 15 } },
+  },
+  {
+    id: "kano",
+    name: "狩野先生",
+    emoji: "🧑‍🔧",
+    subject: "狩野",
+    hp: 70,
+    attackPercent: 12,
+    gold: [40, 60],
+    drops: drops("wrench"),
+    description:
+      "星空を求めてドライブに行くロマンチスト。最近の悩みは12時間は寝ないと寝た気がしないという驚異のロングスリーパー。",
+    voice: "星空、見に行かない？ …でもその前に12時間寝かせて。",
+    skill: { name: "ものづくり", description: "攻撃力とゴールドが上がる", boostPerLevel: { attack: 1, goldBonus: 5 } },
+    image: "/teachers/kano.png",
+    card: "/teachers/kano-card.png",
   },
 ];
 
-export type TeacherDef = {
+// Total wins against a teacher needed for each skill level (index 0 = Lv.1)
+export const SKILL_LEVEL_WINS = [1, 3, 6, 10, 15];
+export const MAX_SKILL_LEVEL = SKILL_LEVEL_WINS.length;
+export const EQUIP_SLOTS = 2;
+
+export function skillLevel(wins: number) {
+  return SKILL_LEVEL_WINS.filter((w) => wins >= w).length;
+}
+
+// Wins still needed for the next skill level (null at max)
+export function winsToNextLevel(wins: number) {
+  const next = SKILL_LEVEL_WINS.find((w) => wins < w);
+  return next === undefined ? null : next - wins;
+}
+
+// Equipment. A player's very first clear lets them pick one "full" piece (all strong,
+// each different). The others drop later as weaker "lite" versions, so farming adds
+// variety without widening the gap to players who arrive late.
+export type GearTier = "full" | "lite";
+
+export type GearDef = {
   id: string;
   name: string;
   emoji: string;
-  subject: string;
   description: string;
-  boostPerLevel: Partial<Stats>;
+  boost: Record<GearTier, Partial<Stats>>;
 };
 
-// Teachers act as equipment: each equipped teacher adds boostPerLevel × level
-export const TEACHERS: TeacherDef[] = [
+export const GEAR: GearDef[] = [
   {
-    id: "pe",
-    name: "体育の先生",
-    emoji: "🏃",
-    subject: "体育",
-    description: "体力自慢。最大HPが上がる。",
-    boostPerLevel: { maxHp: 20 },
+    id: "sword",
+    name: "勇者の剣",
+    emoji: "🗡️",
+    description: "攻撃力が大きく上がる。",
+    boost: { full: { attack: 8 }, lite: { attack: 3 } },
   },
   {
-    id: "science",
-    name: "理科の先生",
-    emoji: "🔬",
-    subject: "理科",
-    description: "弱点を分析して攻撃力アップ。",
-    boostPerLevel: { attack: 3 },
+    id: "boots",
+    name: "疾風のくつ",
+    emoji: "👟",
+    description: "回避のクールタイムが短くなる。",
+    boost: { full: { dodgeCooldownMs: -1200 }, lite: { dodgeCooldownMs: -500 } },
   },
   {
-    id: "math",
-    name: "数学の先生",
-    emoji: "📐",
-    subject: "数学",
-    description: "計算で回避のタイミングを短縮。",
-    boostPerLevel: { dodgeCooldownMs: -300 },
-  },
-  {
-    id: "home",
-    name: "家庭科の先生",
-    emoji: "🧵",
-    subject: "家庭科",
-    description: "やりくり上手。ゴールドとレア率が上がる。",
-    boostPerLevel: { goldBonus: 10, rareBonus: 10 },
-  },
-  // Placeholder teachers (names, boosts and 合言葉 can be changed freely)
-  {
-    id: "japanese",
-    name: "国語の先生",
-    emoji: "📖",
-    subject: "国語",
-    description: "言葉の力で攻撃力アップ。",
-    boostPerLevel: { attack: 2 },
-  },
-  {
-    id: "english",
-    name: "英語の先生",
-    emoji: "🌍",
-    subject: "英語",
-    description: "世界の知識でレア率アップ。",
-    boostPerLevel: { rareBonus: 15 },
-  },
-  {
-    id: "social",
-    name: "社会の先生",
-    emoji: "🗾",
-    subject: "社会",
-    description: "経済にくわしくゴールドが増える。",
-    boostPerLevel: { goldBonus: 15 },
-  },
-  {
-    id: "music",
-    name: "音楽の先生",
-    emoji: "🎵",
-    subject: "音楽",
-    description: "リズム感で回避が速くなる。",
-    boostPerLevel: { dodgeCooldownMs: -200 },
-  },
-  {
-    id: "art",
-    name: "美術の先生",
-    emoji: "🎨",
-    subject: "美術",
-    description: "ひらめきでHPとレア率が少し上がる。",
-    boostPerLevel: { maxHp: 10, rareBonus: 5 },
-  },
-  {
-    id: "tech",
-    name: "技術の先生",
-    emoji: "🔧",
-    subject: "技術",
-    description: "ものづくりで攻撃力とHPが上がる。",
-    boostPerLevel: { attack: 1, maxHp: 10 },
+    id: "charm",
+    name: "幸運のお守り",
+    emoji: "🍀",
+    description: "ゴールドとレアドロップ率が上がる。",
+    boost: { full: { goldBonus: 30, rareBonus: 30 }, lite: { goldBonus: 10, rareBonus: 10 } },
   },
 ];
 
-export const MAX_TEACHER_LEVEL = 5;
-export const EQUIP_SLOTS = 2;
-
-export function levelUpCost(level: number) {
-  return { gold: level * 100 };
-}
+// Chance per win (after the starter pick) that a lite piece you don't own yet drops
+export const GEAR_DROP_CHANCE = 0.1;
 
 export type Progress = {
   nickname: string;
@@ -218,15 +231,20 @@ export type Progress = {
   items: Record<string, number>;
   seen: string[];
   defeated: Record<string, number>;
-  teachers: Record<string, number>; // teacher id -> level
-  equipped: string[];
+  equipped: string[]; // equipped skills (teacher ids)
+  gear: Record<string, GearTier>;
+  equippedGear: string | null;
   titles: string[];
   activeTitle: string | null;
   tutorialDone: boolean;
 };
 
 const totalWins = (p: Progress) =>
-  Object.values(p.defeated).reduce((sum, n) => sum + n, 0);
+  BOSSES.reduce((sum, b) => sum + (p.defeated[b.id] ?? 0), 0);
+
+export function needsStarterGear(p: Progress) {
+  return totalWins(p) > 0 && Object.keys(p.gear).length === 0;
+}
 
 export type TitleDef = {
   id: string;
@@ -237,7 +255,7 @@ export type TitleDef = {
 
 const FAN_WINS = 10;
 
-// The mini-boss this player has beaten most (at least FAN_WINS times), for "〇〇愛好家"
+// The teacher this player has beaten most (at least FAN_WINS times), for "〇〇愛好家"
 function favoriteBoss(p: Progress) {
   const best = BOSSES.reduce<BossDef | null>(
     (top, b) => ((p.defeated[b.id] ?? 0) > (top ? p.defeated[top.id] ?? 0 : 0) ? b : top),
@@ -248,14 +266,20 @@ function favoriteBoss(p: Progress) {
 
 // Earning every other title unlocks "collector" (withTitles re-checks until nothing new)
 export const TITLES: TitleDef[] = [
-  { id: "rookie", name: "はじめの一歩", description: "小ボスを初めて倒した", unlocked: (p) => totalWins(p) >= 1 },
+  { id: "rookie", name: "はじめの一歩", description: "先生を初めて倒した", unlocked: (p) => totalWins(p) >= 1 },
   {
     id: "scholar",
     name: "救世主",
-    description: "すべての小ボスを倒す",
+    description: "すべての先生を倒す",
     unlocked: (p) => BOSSES.every((b) => p.defeated[b.id]),
   },
-  { id: "veteran", name: "百戦錬磨", description: "小ボスを100回倒す", unlocked: (p) => totalWins(p) >= 100 },
+  {
+    id: "master",
+    name: "免許皆伝",
+    description: `スキルをLv.${MAX_SKILL_LEVEL}にする`,
+    unlocked: (p) => BOSSES.some((b) => skillLevel(p.defeated[b.id] ?? 0) >= MAX_SKILL_LEVEL),
+  },
+  { id: "veteran", name: "百戦錬磨", description: "先生を100回倒す", unlocked: (p) => totalWins(p) >= 100 },
   {
     id: "lucky",
     name: "お宝ハンター",
@@ -274,11 +298,17 @@ export const TITLES: TitleDef[] = [
     description: "すべてのアイテムをゲットする",
     unlocked: (p) => ITEMS.every((i) => p.items[i.id]),
   },
+  {
+    id: "all-gear",
+    name: "フル装備",
+    description: "すべての装備を集める",
+    unlocked: (p) => GEAR.every((g) => p.gear[g.id]),
+  },
   { id: "rich", name: "貯キング", description: "ゴールドを1000G集める", unlocked: (p) => p.gold >= 1000 },
   {
     id: "fan",
     name: "〇〇愛好家",
-    description: `同じ小ボスを${FAN_WINS}回倒す`,
+    description: `同じ先生を${FAN_WINS}回倒す`,
     unlocked: (p) => favoriteBoss(p) !== null,
   },
   {
@@ -289,7 +319,7 @@ export const TITLES: TitleDef[] = [
   },
 ];
 
-// Display name; "〇〇愛好家" becomes e.g. "スライム愛好家"
+// Display name; "〇〇愛好家" becomes e.g. "鈴木先生愛好家"
 export function titleName(t: TitleDef, p: Progress) {
   if (t.id === "fan") {
     const boss = favoriteBoss(p);
@@ -302,26 +332,17 @@ export function titleName(t: TitleDef, p: Progress) {
 export const STAGE_EVENT_HOUR = 14;
 export const STAGE_EVENT_MINUTE = 0;
 
-// Venue 合言葉 (written on posters around the venue). Change the words here.
+// Venue 合言葉 (written on posters next to each teacher). Change the words here.
 // Matching ignores hiragana/katakana, full/half width, case, spaces and punctuation.
+// Placeholder words carried over from the old subject teachers — replace before printing posters.
 export const BOSS_CODEWORDS: Record<string, string> = {
-  slime: "ぷるぷる",
-  dragon: "ほのお",
-  ghost: "うらめしや",
-  robot: "ピピッ",
-};
-
-export const TEACHER_CODEWORDS: Record<string, string> = {
-  pe: "たいいく",
-  science: "じっけん",
-  math: "けいさん",
-  home: "さいほう",
-  japanese: "ことのは",
-  english: "はろー",
-  social: "ちず",
-  music: "どれみ",
-  art: "えのぐ",
-  tech: "はぐるま",
+  suzuki: "ことのは",
+  osawa: "たいいく",
+  yagi: "じっけん",
+  ohashi: "さいほう",
+  shibata: "けいさん",
+  futamura: "はろー",
+  kano: "はぐるま",
 };
 
 export function normalizeCodeword(text: string) {
@@ -332,25 +353,16 @@ export function normalizeCodeword(text: string) {
     .replace(/[\s!?！？。、・.,~〜]/g, "");
 }
 
-export type CodeAction =
-  | { kind: "boss"; boss: BossDef }
-  | { kind: "teacher"; teacher: TeacherDef };
-
 // Accepts a venue 合言葉, or the older "ARBOSS:BOSS:<id>" / "ARBOSS:TEACHER:<id>" codes
 // (also inside a URL as ?qr=<code>), so links printed earlier keep working.
-export function parseCode(text: string): CodeAction | null {
+export function parseCode(text: string): BossDef | null {
   const word = normalizeCodeword(text);
   if (word) {
     const bossId = Object.keys(BOSS_CODEWORDS).find(
       (id) => normalizeCodeword(BOSS_CODEWORDS[id]) === word
     );
     const boss = BOSSES.find((b) => b.id === bossId);
-    if (boss) return { kind: "boss", boss };
-    const teacherId = Object.keys(TEACHER_CODEWORDS).find(
-      (id) => normalizeCodeword(TEACHER_CODEWORDS[id]) === word
-    );
-    const teacher = TEACHERS.find((t) => t.id === teacherId);
-    if (teacher) return { kind: "teacher", teacher };
+    if (boss) return boss;
   }
 
   let payload = text.trim();
@@ -362,13 +374,6 @@ export function parseCode(text: string): CodeAction | null {
   }
   const [prefix, kind, id] = payload.split(":");
   if (prefix?.toUpperCase() !== "ARBOSS") return null;
-  if (kind?.toUpperCase() === "BOSS") {
-    const boss = BOSSES.find((b) => b.id === id);
-    return boss ? { kind: "boss", boss } : null;
-  }
-  if (kind?.toUpperCase() === "TEACHER") {
-    const teacher = TEACHERS.find((t) => t.id === id);
-    return teacher ? { kind: "teacher", teacher } : null;
-  }
-  return null;
+  if (!["BOSS", "TEACHER"].includes(kind?.toUpperCase() ?? "")) return null;
+  return BOSSES.find((b) => b.id === id) ?? null;
 }
